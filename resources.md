@@ -17,7 +17,6 @@
 
 ## CheatSheets
 
-- https://github.com/CountablyInfinite/oscp_cheatsheet
 - https://onikenaz.ovh/cheatsheets/
 
 ## Courses
