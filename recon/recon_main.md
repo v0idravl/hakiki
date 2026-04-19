@@ -1,5 +1,5 @@
 # Recon - [Back to Main](../README.md)
-- [Service Scanning](service_scanning.md)
+- [Service Scanning](service_enumeration.md)
 - [Web Enumeratoin](web_enumeration.md)
 
 ## Automated Recon
