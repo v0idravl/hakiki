@@ -5,17 +5,8 @@
 ## nmap (General)
 
 ```bash
-# Fast Initial TCP
-nmap -v -sS -sV -Pn --top-ports 1000 -oA fast<target> <target>
-# Full TCP
-nmap -v -sS -Pn -sV -p 0-65535 -oA full_tcp<target> <target>
-# Limited Full TCP
-nmap -sT -p- --min-rate 5000 --max-retries 1 <target>
-# Top 100 UDP
-nmap -v -sU -T4 -Pn --top-ports 100 -oA top_100_udp<target> <target>
-# Full Vuln
-nmap -v -sS  -Pn --script vuln --script-args=unsafe=1 -oA full_vuln<target> <target>
-
+# Limited Full TCP if -sS taking too long
+nmap -sT -p- --min-rate 5000 -oA "$OUTPUT_DIR/limited_tcp$IP" --max-retries 1 "$IP"
 ```
 
 ### Scripts
@@ -23,19 +14,27 @@ nmap -v -sS  -Pn --script vuln --script-args=unsafe=1 -oA full_vuln<target> <tar
 
 ```bash
 locate scripts/citrix
-nmap --script <script name> -p <port> <host>
+nmap --script <script name> -p <port> $IP
 ```
 
 Banner Grabbing
 ```bash
-nmap -sV --script=banner <target>
+nmap -sV --script=banner $IP
 ```
 
 ## 21 - FTP
 
 ```bash
-ftp -p <target>
+nmap --script ftp-* -p $IP
+ftp anonymous@$IP
 ```
+
+-Is version vulnerable?
+
+```bash
+hydra -L <user.txt> -P <wordlist.txt> $IP ftp
+```
+- Able to write to web server? or other path upload to execution?
 
 FTP COMMANDS
 ```bash
@@ -44,6 +43,13 @@ ls
 get
 ```
 
+## 22 - SSH
+
+- 22, and 2222 most common.
+- Check for SFTP share
+```bash
+hydra -L <user.txt -P <wordlist.txt> $IP ssh
+```
 ## 161,162 - SNMP
 
 **UDP**
