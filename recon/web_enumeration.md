@@ -1,7 +1,5 @@
 # Web Enumeration [Back to Recon](recon_main.md)
 
-- 
-
 - Check default creds on any login.
 - Fuzz api endpoints with gobuster.
 - Search version of webserver for exploits.
