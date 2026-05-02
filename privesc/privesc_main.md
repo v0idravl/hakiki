@@ -1,5 +1,11 @@
 # Privesc - [Back To Main](../README.md)
 
+```bash
+sudo -l 
+find / -perm -4000 2>/dev/null
+find / -perm -2000 2>/dev/null
+getcap -r / 2>/dev/null
+```
 
 ## File overwite
 
