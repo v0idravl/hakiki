@@ -27,12 +27,16 @@ nmap -sV --script=banner $IP
 ```bash
 nmap --script ftp-* -p $IP
 ftp anonymous@$IP
+# Error with Passive Mode? add:
+-A
 ```
 
 -Is version vulnerable?
 
 ```bash
 hydra -L <user.txt> -P <wordlist.txt> $IP ftp
+# Common cred bruteforce
+hydra -C /usr/share/wordlists/seclists/Passwords/Default-Credentials/ftp-betterdefaultpasslist.txt ftp://192.168.195.183
 ```
 - Able to write to web server? or other path upload to execution?
 
