@@ -1,40 +1,102 @@
-# Web Enumeration [Back to Recon](recon_main.md)
+# Web Enumeration — [Back to Recon](recon_main.md)
 
-- Check default creds on any login.
-- Fuzz api endpoints with gobuster.
-- Search version of webserver for exploits.
-- `wpscan` WordPress and search for plugin vuln.
-- Check for file uploads (put/webdav)
-    - brutefoce WebDav creds
-    - Upload files to rest of found folders as you may not have permissions to other folders.
-- Try SQL injection (see cheatsheets) on logins
-- add `[], ]], [[` in cookie and parameter values to cause error
-- Different HTTP Verbs like PATCH, DEBUG, or something wrong like FAKE
-- If `page=x` found try path traversal and lf. 
-    - If windows machine try a RFI with PTH attack.
-- Review certificates.
-    - Test for SSL vuln with [testssl](https://github.com/drwetter/testssl.ssl)
-        - Confirm vulns with `a2sv`
-- Review source code.
-    - Check for comments that may be "spaced" off page. 
-    - Links to other files inside CSS files
-- After initial directory busting, bust for  for backups of all the executable files (“.php”, “.aspx”…). 
-    - Common variations for naming a backup are: file.ext~, #file.ext#, ~file.ext, file.ext.bak, file.ext.tmp, file.ext.old, file.bak, file.tmp and file.old.
-    - Be aware of any subdomain or link that is related with some S3 bucket. 
-    - `.env` info such as api keys, dbs passwords and other info.
-    - `.git` info can be extracted
-    - `Javascript` - Deobfuscation tools, vulnerability scanners (?)
-- crawling with [gospider](https://github.com/jaeles-project/gospider)
-- Tools like `arjun, parameth, x8 and Param Miner` to discover hidden paramaters. Try hidden params on each executable web file.
+See [Web Exploitation](../web/web_exploitation.md) for attack techniques.
 
-If server is running Windows, or find login asking for creds and domain name, information disclosure and automated with `http-ntlm-info.nse`
+## Fingerprinting
 
-- HHTP Redirect (CTF)
-- [HackTricks Web Guide](https://hacktricks.wiki/en/network-services-pentesting/pentesting-web/index.html)
-- [HackTricks Web Methodology](https://hacktricks.wiki/en/pentesting-web/web-vulnerabilities-methodology.html)
+```bash
+whatweb $IP                          # quick tech stack ID
+curl -I http://$IP                   # headers: server, X-Powered-By, cookies
+nmap --script http-headers -p 80 $IP
 
-*see EyeWitness tool*
+# Check for NTLM info disclosure (Windows auth prompts)
+nmap --script http-ntlm-info -p 80,443 $IP
+```
 
-### Wordlists
-- Custom wordlist generation via crawling site. [Cewl](https://github.com/digininja/CeWL). 
-- Consider other recommended dictionaries when bruteforcing.
+## Directory / File Fuzzing
+
+```bash
+# Standard dir bust
+ffuf -u http://$IP/FUZZ -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -fc 404
+
+# Include file extensions
+ffuf -u http://$IP/FUZZ -w /usr/share/seclists/Discovery/Web-Content/raft-medium-words.txt \
+  -e .php,.txt,.html,.bak,.zip,.old -fc 404
+
+# Recurse into found directories
+feroxbuster -u http://$IP -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt \
+  -x php,txt,html -n    # -n = no recursion (add recursion with -d 2)
+
+# Backup file hunt (after finding executables)
+ffuf -u http://$IP/FUZZ -w /usr/share/seclists/Discovery/Web-Content/raft-medium-words.txt \
+  -e .php~,.bak,.tmp,.old,.orig -fc 404
+```
+
+## Vhost / Subdomain Enumeration
+
+```bash
+# Vhost fuzzing (add $IP to /etc/hosts first if needed)
+ffuf -u http://$IP -H "Host: FUZZ.$DOMAIN" \
+  -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
+  -fs <default_response_size>   # filter by size of baseline response
+
+# DNS brute force
+dnsrecon -d $DOMAIN -t brt -D /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+```
+
+## Parameter Discovery
+
+```bash
+# Hidden parameter fuzzing on a known endpoint
+ffuf -u "http://$IP/page.php?FUZZ=test" \
+  -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt \
+  -fs <baseline_size>
+
+# arjun — smarter param discovery (tries GET, POST, JSON)
+arjun -u http://$IP/api/endpoint
+```
+
+## Vulnerability Scanning
+
+```bash
+nikto -h http://$IP -C all          # general vuln scan
+
+# WordPress
+wpscan --url http://$IP --enumerate p,u,t   # plugins, users, themes
+wpscan --url http://$IP -P /usr/share/wordlists/rockyou.txt -U admin
+
+# SSL/TLS
+testssl.sh https://$IP
+```
+
+## Crawling
+
+```bash
+# Crawl site and collect URLs, forms, JS files
+gospider -s http://$IP -o output/ -c 10 -d 3
+```
+
+## Manual Checklist
+
+- Default creds on any login page (admin:admin, admin:password, system:manager etc.)
+- `/robots.txt`, `/sitemap.xml`, `/.well-known/`
+- Source code: comments, hardcoded creds, links to hidden endpoints, JS API keys
+- `.git/` exposed? → `git-dumper http://$IP/.git/ ./git-output`
+- `.env` exposed? → DB creds, API keys
+- Check cookies: JWT? base64? deserializable?
+- HTTP verbs: OPTIONS, PUT, PATCH, TRACE — may expose upload or debug
+- Error pages: leak stack traces, framework versions, paths
+- API endpoints: fuzz with `/api/FUZZ`, `/v1/FUZZ`, `/api/v2/FUZZ`
+- S3 bucket references in HTML/JS → check if public
+- WebDAV enabled? `davtest -url http://$IP/webdav/`
+
+## Wordlists
+
+| Use | Path |
+|---|---|
+| Directories | `/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt` |
+| Words + extensions | `/usr/share/seclists/Discovery/Web-Content/raft-medium-words.txt` |
+| API paths | `/usr/share/seclists/Discovery/Web-Content/api/objects.txt` |
+| Parameters | `/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt` |
+| Subdomains | `/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt` |
+| Custom (site-specific) | `cewl http://$IP -m 4 -w cewl.txt` |

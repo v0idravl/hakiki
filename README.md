@@ -1,20 +1,25 @@
 # hakiki
 
+Quick reference for OSCP, CTF, and professional penetration testing. Commands over explanation — best tool per job.
+
+> **OSCP** = exam-legal &nbsp;|&nbsp; **PT ONLY** = pentest/CTF only (auto-exploitation or otherwise restricted on OSCP)
+
+---
+
 - [Recon](recon/recon_main.md)
-    - [Service Scanning](recon/service_scanning.md)
-    - [Web Enumeration](recon/web_enumeration.md)
-- [Active Directory](active_directory/ad_main.md)
-- [Exploit](exploit_main.md)
+  - [Service Enumeration](recon/service_enumeration.md)
+  - [Web Enumeration](recon/web_enumeration.md)
+- [Web Exploitation](web/web_exploitation.md)
+- [Passwords & Cracking](passwords/password_attacks.md)
+- [Exploit](exploit/exploit_main.md)
+- [Buffer Overflow](bufferoverflow/bof_main.md)
 - [Post-Exploit](post_exploit/post_exploit_main.md)
-- [PrivEsc](prives/privesc_main.md)
-
-- [Resources](resources.md)
+- [Pivoting](pivoting/pivoting_main.md)
+- [PrivEsc — Linux](privesc/privesc_main.md)
+- [PrivEsc — Windows](privesc/windows_privesc.md)
+- [PrivEsc — CVEs](privesc/cve_privesc.md)
+- [Active Directory](active_directory/ad_main.md)
+  - [AD CS, ACL Abuse, Coercion, Delegation](active_directory/adcs.md)
+- [Evasion](evasion.md)
 - [Networking](networking.md)
-
-## Current Goals
-
-[] review notable command cheatsheats and useful accordingly
-[] review own writeups and add commands 
-    [] complete boxes as needed with this info
-- stay organized and useful
-- work from this and add accordingly
+- [Resources](resources.md)

