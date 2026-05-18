@@ -1,0 +1,51 @@
+- title: "home"
+  url: /hakiki/
+
+- title: "recon"
+  url: /hakiki/recon/recon_main
+  children:
+    - title: service enumeration
+      url: /hakiki/recon/service_enumeration
+    - title: web enumeration
+      url: /hakiki/recon/web_enumeration
+
+- title: "web exploitation"
+  url: /hakiki/web/web_exploitation
+
+- title: "passwords"
+  url: /hakiki/passwords/password_attacks
+
+- title: "exploit"
+  url: /hakiki/exploit/exploit_main
+
+- title: "buffer overflow"
+  url: /hakiki/bufferoverflow/bof_main
+
+- title: "post-exploit"
+  url: /hakiki/post_exploit/post_exploit_main
+
+- title: "pivoting"
+  url: /hakiki/pivoting/pivoting_main
+
+- title: "privesc — linux"
+  url: /hakiki/privesc/privesc_main
+  children:
+    - title: windows privesc
+      url: /hakiki/privesc/windows_privesc
+    - title: cve privesc
+      url: /hakiki/privesc/cve_privesc
+
+- title: "active directory"
+  url: /hakiki/active_directory/ad_main
+  children:
+    - title: adcs & acl abuse
+      url: /hakiki/active_directory/adcs
+
+- title: "evasion"
+  url: /hakiki/evasion
+
+- title: "networking"
+  url: /hakiki/networking
+
+- title: "resources"
+  url: /hakiki/resources

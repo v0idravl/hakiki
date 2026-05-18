@@ -1,25 +1,35 @@
+---
+layout: default
+title: hakiki
+permalink: /
+---
+
 # hakiki
 
-Quick reference for OSCP, CTF, and professional penetration testing. Commands over explanation — best tool per job.
+Quick reference for OSCP, CTF, and professional penetration testing. Commands over explanation — best tool per job. Built around Kali Linux tooling.
 
-> **OSCP** = exam-legal &nbsp;|&nbsp; **PT ONLY** = pentest/CTF only (auto-exploitation or otherwise restricted on OSCP)
+> `OSCP` = exam-legal &nbsp;·&nbsp; `PT ONLY` = pentest/CTF only (auto-exploitation or exam-restricted)
 
 ---
 
-- [Recon](recon/recon_main.md)
-  - [Service Enumeration](recon/service_enumeration.md)
-  - [Web Enumeration](recon/web_enumeration.md)
-- [Web Exploitation](web/web_exploitation.md)
-- [Passwords & Cracking](passwords/password_attacks.md)
-- [Exploit](exploit/exploit_main.md)
-- [Buffer Overflow](bufferoverflow/bof_main.md)
-- [Post-Exploit](post_exploit/post_exploit_main.md)
-- [Pivoting](pivoting/pivoting_main.md)
-- [PrivEsc — Linux](privesc/privesc_main.md)
-- [PrivEsc — Windows](privesc/windows_privesc.md)
-- [PrivEsc — CVEs](privesc/cve_privesc.md)
-- [Active Directory](active_directory/ad_main.md)
-  - [AD CS, ACL Abuse, Coercion, Delegation](active_directory/adcs.md)
-- [Evasion](evasion.md)
-- [Networking](networking.md)
-- [Resources](resources.md)
+## Sections
+
+| Section | What's Inside |
+|---|---|
+| [Recon](recon/recon_main.md) | rustscan, nmap workflow, environment setup |
+| [Service Enumeration](recon/service_enumeration.md) | FTP, SSH, SMB, MSSQL, Redis, WinRM — all major services with/without creds |
+| [Web Enumeration](recon/web_enumeration.md) | ffuf, feroxbuster, vhost fuzzing, parameter discovery |
+| [Web Exploitation](web/web_exploitation.md) | SQLi, LFI, file upload, SSRF, XXE, SSTI, deserialization, GraphQL, IDOR |
+| [Passwords & Cracking](passwords/password_attacks.md) | hashcat modes, john, credential spraying, Responder |
+| [Exploit](exploit/exploit_main.md) | searchsploit, msfvenom all formats, rev shells in 8 languages |
+| [Buffer Overflow](bufferoverflow/bof_main.md) | Classic x86 Windows BOF — full 7-step workflow |
+| [Post-Exploit](post_exploit/post_exploit_main.md) | Shell stabilization, file transfer, Mimikatz, LSASS dump, persistence |
+| [Pivoting](pivoting/pivoting_main.md) | ligolo-ng, chisel, SSH tunneling, double pivot |
+| [PrivEsc — Linux](privesc/privesc_main.md) | linPEAS, sudo, SUID, cron, NFS, Docker, Python hijacking |
+| [PrivEsc — Windows](privesc/windows_privesc.md) | WinPEAS, GodPotato, service exploits, UAC bypass, cred hunting |
+| [PrivEsc — CVEs](privesc/cve_privesc.md) | PwnKit, Dirty Pipe, PrintNightmare, HiveNightmare, EternalBlue |
+| [Active Directory](active_directory/ad_main.md) | Full attack chain: enum → spray → relay → Kerberoast → DCSync |
+| [ADCS & ACL Abuse](active_directory/adcs.md) | ESC1/ESC8, coercion, ACL edges, delegation, ZeroLogon, noPac |
+| [Evasion](evasion.md) | AMSI bypass, execution policy, Defender, LOLBAS, obfuscation |
+| [Networking](networking.md) | Interface commands, port reference, host discovery |
+| [Resources](resources.md) | GTFOBins, LOLBAS, PayloadsAllTheThings, tool install notes |
