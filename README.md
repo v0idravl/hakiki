@@ -30,6 +30,7 @@ Quick reference for OSCP, CTF, and professional penetration testing. Commands ov
 | [PrivEsc — CVEs](privesc/cve_privesc.md) | PwnKit, Dirty Pipe, PrintNightmare, HiveNightmare, EternalBlue |
 | [Active Directory](active_directory/ad_main.md) | Full attack chain: enum → spray → relay → Kerberoast → DCSync |
 | [ADCS & ACL Abuse](active_directory/adcs.md) | ESC1/ESC8, coercion, ACL edges, delegation, ZeroLogon, noPac |
+| [Reverse Engineering](reversing/reversing_main.md) | file/strings/checksec triage, GDB, Ghidra, ltrace, UPX, angr, CTF patterns |
 | [Evasion](evasion.md) | AMSI bypass, execution policy, Defender, LOLBAS, obfuscation |
 | [Networking](networking.md) | Interface commands, port reference, host discovery |
 | [Resources](resources.md) | GTFOBins, LOLBAS, PayloadsAllTheThings, tool install notes |

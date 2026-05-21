@@ -8,9 +8,13 @@ nxc smb $DC_IP -u user -p 'password' -M adcs
 curl -k http://$DC_IP/certsrv/   # HTTP enrollment = ESC8 candidate
 ```
 
+> **certipy username format:** always `user@DOMAIN` (UPN with `@`), not `DOMAIN/user`.
+
 ---
 
 ## Enumerate with certipy
+
+> **Kali Linux:** `certipy` is installed as `certipy-ad` — substitute `certipy-ad` for `certipy` in all commands below.
 
 ```bash
 # Find all vulnerable templates and misconfigurations
