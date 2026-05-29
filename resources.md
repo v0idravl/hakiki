@@ -86,6 +86,13 @@ pip3 install impacket
 | [SANS Posters](https://www.sans.org/blog/the-ultimate-list-of-sans-cheat-sheets/) | Quick command reference PDFs |
 | [WADComs](https://wadcoms.github.io/) | AD-specific commands filtered by what you have |
 
+## Exploit Dev / Binary Exploitation
+
+| Resource | Notes |
+|---|---|
+| [The Systems Hacking Handbook](https://ike.mahaloz.re/1_introduction/introduction.html) | Structured systems exploitation reference — from binary basics to advanced techniques |
+| [Architecture 1001: x86-64 Assembly](https://ost2.fyi/Arch1001) | OpenSecurityTraining2 — free course, Intel syntax, exploitation-focused |
+
 ## Reporting
 
 | Tool | Notes |

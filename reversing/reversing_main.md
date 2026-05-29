@@ -331,6 +331,16 @@ print(base64.b64decode(encoded.translate(table) + "=="))
 
 ---
 
+## x86 / Assembly References
+
+| Resource | Notes |
+|---|---|
+| [Felix Cloutier x86 Reference](https://www.felixcloutier.com/x86/) | Unofficial but detailed — instruction encoding, flags, operand behaviour |
+| [x86 Prefix & Escape Opcode Flowchart](https://soc.me/interfaces/x86-prefixes-and-escape-opcodes-flowchart) | Visual map of x86 prefix bytes and opcode escape sequences |
+| [Reverse Engineering Tutorial](https://github.com/mytechnotalent/Reverse-Engineering-Tutorial) | Multi-part ARM + x86 RE series — concepts, tools, worked examples |
+
+---
+
 ## Non-Native Formats
 
 ### Java / JVM / APK

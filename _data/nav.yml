@@ -41,6 +41,9 @@
     - title: adcs & acl abuse
       url: /hakiki/active_directory/adcs
 
+- title: "reversing"
+  url: /hakiki/reversing/reversing_main
+
 - title: "evasion"
   url: /hakiki/evasion
 
