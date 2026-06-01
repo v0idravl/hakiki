@@ -86,6 +86,20 @@ pip3 install impacket
 | [SANS Posters](https://www.sans.org/blog/the-ultimate-list-of-sans-cheat-sheets/) | Quick command reference PDFs |
 | [WADComs](https://wadcoms.github.io/) | AD-specific commands filtered by what you have |
 
+## Practice Platforms
+
+| Resource | Notes |
+|---|---|
+| [linuxzoo.net](https://linuxzoo.net/) | Browser-based Linux practice environments — good for command drilling without a VM |
+| [cmdchallenge.com](https://cmdchallenge.com/) | One-liner command challenges — useful for shell fluency |
+
+## Linux / Shell References
+
+| Resource | Notes |
+|---|---|
+| [Unix Shell: The Art of IO Redirection](https://web.archive.org/web/20220629044814/http://bencane.com:80/2012/04/16/unix-shell-the-art-of-io-redirection/) | Clear breakdown of stdin/stdout/stderr redirection, fd semantics |
+| [Pipes, Forks & Dups](https://www.rozmichelle.com/pipes-forks-dups/) | How pipes, fork(), and dup2() interact — essential for understanding shell internals and C reverse shell construction |
+
 ## Exploit Dev / Binary Exploitation
 
 | Resource | Notes |

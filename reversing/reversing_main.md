@@ -338,6 +338,7 @@ print(base64.b64decode(encoded.translate(table) + "=="))
 | [Felix Cloutier x86 Reference](https://www.felixcloutier.com/x86/) | Unofficial but detailed — instruction encoding, flags, operand behaviour |
 | [x86 Prefix & Escape Opcode Flowchart](https://soc.me/interfaces/x86-prefixes-and-escape-opcodes-flowchart) | Visual map of x86 prefix bytes and opcode escape sequences |
 | [Reverse Engineering Tutorial](https://github.com/mytechnotalent/Reverse-Engineering-Tutorial) | Multi-part ARM + x86 RE series — concepts, tools, worked examples |
+| [x86-64 CPU Registers](https://wiki.osdev.org/CPU_Registers_x86-64) | OSDev wiki — register layout, segment registers, control registers, MSRs |
 
 ---
 
