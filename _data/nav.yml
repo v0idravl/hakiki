@@ -27,12 +27,14 @@
 - title: "pivoting"
   url: /hakiki/pivoting/pivoting_main
 
-- title: "privesc — linux"
+- title: "privesc"
   url: /hakiki/privesc/privesc_main
   children:
-    - title: windows privesc
+    - title: linux
+      url: /hakiki/privesc/privesc_main
+    - title: windows
       url: /hakiki/privesc/windows_privesc
-    - title: cve privesc
+    - title: cve exploits
       url: /hakiki/privesc/cve_privesc
 
 - title: "active directory"

@@ -1,4 +1,4 @@
-# PrivEsc — Windows — [Back to Linux PrivEsc](privesc_main.md) | [Back to Main](../README.md)
+# PrivEsc — Windows — [Back to PrivEsc](privesc_main.md) | [Back to Main](../README.md)
 
 ## Auto Enumeration
 

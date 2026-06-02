@@ -1,4 +1,4 @@
-# CVE PrivEsc — [Back to Linux PrivEsc](privesc_main.md) | [Back to Windows PrivEsc](windows_privesc.md)
+# CVE PrivEsc — [Back to Linux PrivEsc](privesc_main.md) | [Back to Windows PrivEsc](windows_privesc.md) | [Back to Main](../README.md)
 
 Quick check + exploit per high-value CVE. Always verify version before running.
 
