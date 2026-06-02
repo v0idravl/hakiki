@@ -36,8 +36,9 @@ ss -tulnp                       # listening ports + PIDs
 | 5432 | PostgreSQL |
 | 5985/5986 | WinRM |
 | 6379 | Redis |
+| 8000/8089 | Splunk (Web / API) |
 | 8009 | Apache AJP (Ghostcat) |
-| 8080/8443 | HTTP Alt / Tomcat |
+| 8080/8443 | HTTP Alt / Tomcat / Jenkins |
 | 9200/9300 | Elasticsearch |
 | 11211 | Memcached |
 | 27017 | MongoDB |
