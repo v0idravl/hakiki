@@ -12,6 +12,9 @@
 | [HackTricks](https://hacktricks.wiki/) | Deep-dive technique reference when you need more detail |
 | [Exploit-DB](https://www.exploit-db.com/) | Public exploits — same DB as searchsploit |
 | [Sploitus](https://sploitus.com/) | Aggregated exploit + GitHub PoC search |
+| [dorksearch.com](https://dorksearch.com/) | Pre-built Google dork templates |
+| [PortSwigger Web Security Academy](https://portswigger.net/web-security) | Web attack labs with explanations — best free web security training |
+| [WADComs](https://wadcoms.github.io/) | AD commands filtered by what you have |
 
 
 ## Wordlists
@@ -29,44 +32,43 @@
 ## Tools Not in Default Kali (Install These)
 
 ```bash
-# netexec — replaces crackmapexec (maintained fork)
-pip3 install netexec
+# AD / Windows
+pip3 install netexec       # replaces crackmapexec
+pip3 install certipy-ad    # ADCS attacks
+pip3 install bloodyAD      # ACL abuse from Linux
+pip3 install coercer       # NTLM coercion (PetitPotam, DFSCoerce, etc.)
+pip3 install mitm6         # IPv6 DNS poisoning
+pip3 install impacket      # latest (Kali version sometimes behind)
 
-# certipy — ADCS attack tool
-pip3 install certipy-ad
+# Web
+pip3 install jwt_tool      # JWT attacks (or: git clone https://github.com/ticarpi/jwt_tool)
+pip3 install trufflehog3   # secrets in git repos (or: brew/apt)
+pip3 install gitleaks      # secrets scanner (binary release preferred)
+pip3 install clairvoyance  # GraphQL schema reconstruction without introspection
+python3 -m pip install tplmap  # SSTI auto-exploit
 
-# bloodyAD — ACL abuse from Linux
-pip3 install bloodyAD
+# Exploit dev
+pip3 install pwntools      # CTF/pwn toolkit
+gem install one_gadget     # single-gadget shell finder
+pip3 install ropper        # ROP gadget finder
+sudo apt install -y patchelf  # modify binary interpreter/RPATH
 
-# coercer — NTLM coercion methods
-pip3 install coercer
-
-# mitm6 — IPv6 DNS poisoning
-pip3 install mitm6
-
-# impacket (latest) — in case Kali version is behind
-pip3 install impacket
+# Recon
+pip3 install sherlock      # username enumeration
+pip3 install subfinder     # passive subdomain discovery
 ```
 
 ```bash
-# ligolo-ng — best pivoting tool (binary release)
-# https://github.com/nicocha30/ligolo-ng/releases
-# Download proxy (LHOST) + agent (RHOST)
-
-# GodPotato — SeImpersonate → SYSTEM
-# https://github.com/BeichenDream/GodPotato/releases
-
-# kerbrute — Kerberos user enum + spray
-# https://github.com/ropnop/kerbrute/releases
-
-# linPEAS / winPEAS
-# https://github.com/peass-ng/PEASS-ng/releases
-
-# pspy — process monitor without root
-# https://github.com/DominicBreuker/pspy/releases
-
-# BloodHound CE
-# https://github.com/SpecterOps/BloodHound
+# Binary releases (download from GitHub releases)
+# ligolo-ng — best pivoting: https://github.com/nicocha30/ligolo-ng/releases
+# GodPotato — SeImpersonate→SYSTEM: https://github.com/BeichenDream/GodPotato/releases
+# kerbrute — Kerberos user enum: https://github.com/ropnop/kerbrute/releases
+# linPEAS / winPEAS: https://github.com/peass-ng/PEASS-ng/releases
+# pspy — rootless process monitor: https://github.com/DominicBreuker/pspy/releases
+# BloodHound CE: https://github.com/SpecterOps/BloodHound
+# SharpHound: https://github.com/BloodHoundAD/SharpHound/releases
+# smuggler.py — HTTP request smuggling: https://github.com/defparam/smuggler
+# interactsh — OOB callback server: https://github.com/projectdiscovery/interactsh
 ```
 
 ## AD-Specific References
