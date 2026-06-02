@@ -13,6 +13,24 @@ nmap --script http-headers -p 80 $IP
 nmap --script http-ntlm-info -p 80,443 $IP
 ```
 
+### Response header analysis
+
+| Header | What to look for |
+|---|---|
+| `Server:` | Version string → searchsploit |
+| `X-Powered-By:` | PHP/ASP.NET version |
+| `X-AspNet-Version:` | .NET version |
+| `Set-Cookie:` | `HttpOnly` missing = XSS can steal; `Secure` missing = sent over HTTP; no `SameSite` = CSRF |
+| `Content-Security-Policy:` | `unsafe-eval`, `unsafe-inline`, wildcards = CSP bypass possible |
+| `Access-Control-Allow-Origin: *` | CORS misconfiguration — can read responses cross-origin |
+| `X-Frame-Options:` | Missing = clickjacking |
+| `Strict-Transport-Security:` | Missing on HTTPS = HSTS not enforced |
+
+```bash
+# Full header dump with curl
+curl -sI https://$IP | grep -v "^$"
+```
+
 ## Directory / File Fuzzing
 
 ```bash
@@ -100,3 +118,29 @@ gospider -s http://$IP -o output/ -c 10 -d 3
 | Parameters | `/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt` |
 | Subdomains | `/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt` |
 | Custom (site-specific) | `cewl http://$IP -m 4 -w cewl.txt` |
+
+---
+
+## Code Repository Recon
+
+Search for leaked credentials, API keys, internal endpoints before active testing.
+
+```bash
+# GitHub browser search (github.com/search)
+org:targetorg filename:.env
+org:targetorg "password" OR "secret" OR "api_key"
+org:targetorg "BEGIN RSA PRIVATE KEY" OR "BEGIN EC PRIVATE KEY"
+org:targetorg extension:sql database
+org:targetorg "internal.target.com"
+
+# Trufflehog — scan GitHub org for secrets (high signal)
+trufflehog github --org=targetorg --token=$GITHUB_TOKEN
+
+# Gitleaks — scan a cloned repo
+git clone https://github.com/target/repo && gitleaks detect --source ./repo/ --report-path leaks.json
+
+# GitDorker — automated multi-dork scan
+python3 GitDorker.py -t $GITHUB_TOKEN -q targetorg -d dorks.txt
+```
+
+**High-value finds:** `.env` with DB/cloud creds, `config.yml`, `application.properties`, raw AWS/GCP API keys, SSH private keys, internal hostname references.
