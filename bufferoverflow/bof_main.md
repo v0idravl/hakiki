@@ -1,6 +1,6 @@
 # Buffer Overflow — [Back to Main](../README.md)
 
-Classic x86 Windows stack-based BOF — the OSCP-style manual approach.
+Classic x86 Windows stack-based BOF — manual approach.
 Assumes Immunity Debugger + mona.py on the target Windows VM.
 
 ---

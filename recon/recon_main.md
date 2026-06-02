@@ -38,7 +38,7 @@ mkdir -p ~/targets/$IP/{scans,loot,screenshots,exploits} && cd ~/targets/$IP
 
 ## Evidence Collection
 
-Keep this consistent — OSCP report requires organized evidence.
+Keep this consistent — professional reports require organized evidence.
 
 ```bash
 # Screenshot every finding (Flameshot or scrot)

@@ -6,9 +6,9 @@ permalink: /
 
 # hakiki
 
-Quick reference for OSCP, CTF, and professional penetration testing. Commands over explanation — best tool per job. Built around Kali Linux tooling.
+Quick reference for CTF and professional penetration testing. Commands over explanation — best tool per job. Built around Kali Linux tooling.
 
-> `OSCP` = exam-legal &nbsp;·&nbsp; `PT ONLY` = pentest/CTF only (auto-exploitation or exam-restricted)
+> `PT ONLY` = pentest/CTF only — auto-exploitation, noisy, or engagement-restricted
 
 ---
 
