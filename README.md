@@ -8,7 +8,17 @@ permalink: /
 
 Quick reference for CTF and professional penetration testing. Fast navigation, commands over long explanations, and phase-oriented pages built around Kali/Linux tooling.
 
+> **Authorized use only:** hakiki is for owned labs, CTFs, and explicitly authorized professional security engagements. Confirm scope, rules of engagement, logging/noise constraints, and written permission before using any technique against real systems.
+>
 > `PT ONLY` = pentest/CTF only — auto-exploitation, noisy, or engagement-restricted.
+
+---
+
+## Why this exists
+
+Hakiki is a field notebook for moving quickly during authorized assessment work without losing methodology. It keeps common enumeration paths, service checks, credential workflows, privilege-escalation reminders, AD chains, and RE/binexp references in one searchable static site.
+
+The goal is not to replace official documentation or long-form writeups. It is a compact checklist/reference layer for deciding what to try next, recording repeatable commands, and keeping enterprise pentest habits consistent across labs and client-style environments.
 
 ---
 
