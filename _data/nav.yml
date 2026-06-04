@@ -12,27 +12,39 @@
 - title: "web exploitation"
   url: /hakiki/web/web_exploitation
 
-- title: "passwords"
-  url: /hakiki/passwords/password_attacks
-
-- title: "exploit"
-  url: /hakiki/exploit/exploit_main
+- title: "credentials"
+  url: /hakiki/credentials/
   children:
+    - title: passwords & cracking
+      url: /hakiki/credentials/password_attacks
+
+- title: "exploit development"
+  url: /hakiki/exploit_dev/
+  children:
+    - title: exploit helpers
+      url: /hakiki/exploit_dev/exploit_main
     - title: binary exploitation
-      url: /hakiki/binary_exploitation/binexp_main
+      url: /hakiki/exploit_dev/binexp_main
+    - title: x86-64 / amd64
+      url: /hakiki/exploit_dev/amd64_main
     - title: pwntools
-      url: /hakiki/python_tools/pwntools
+      url: /hakiki/exploit_dev/pwntools
+    - title: pwndbg
+      url: /hakiki/exploit_dev/pwndbg
+    - title: buffer overflow
+      url: /hakiki/exploit_dev/bof_main
+    - title: scapy
+      url: /hakiki/exploit_dev/scapy
 
-- title: "buffer overflow"
-  url: /hakiki/bufferoverflow/bof_main
+- title: "reverse engineering"
+  url: /hakiki/reversing/reversing_main
+  children:
+    - title: assembly workflow
+      url: /hakiki/reversing/assembly_workflow
+    - title: x86-64 / amd64
+      url: /hakiki/exploit_dev/amd64_main
 
-- title: "post-exploit"
-  url: /hakiki/post_exploit/post_exploit_main
-
-- title: "pivoting"
-  url: /hakiki/pivoting/pivoting_main
-
-- title: "privesc"
+- title: "privilege escalation"
   url: /hakiki/privesc/privesc_main
   children:
     - title: linux
@@ -48,27 +60,20 @@
     - title: adcs & acl abuse
       url: /hakiki/active_directory/adcs
 
-- title: "reversing"
-  url: /hakiki/reversing/reversing_main
+- title: "post-exploitation"
+  url: /hakiki/post_exploitation/
   children:
-    - title: assembly workflow
-      url: /hakiki/reversing/assembly_workflow
-    - title: x86-64 / amd64
-      url: /hakiki/x86_64/amd64_main
+    - title: post-exploit
+      url: /hakiki/post_exploitation/post_exploit_main
+    - title: pivoting
+      url: /hakiki/post_exploitation/pivoting_main
+    - title: evasion
+      url: /hakiki/post_exploitation/evasion
 
-- title: "python tools"
-  url: /hakiki/python_tools/python_tools_main
+- title: "reference"
+  url: /hakiki/reference/
   children:
-    - title: pwntools
-      url: /hakiki/python_tools/pwntools
-    - title: scapy
-      url: /hakiki/python_tools/scapy
-
-- title: "evasion"
-  url: /hakiki/evasion
-
-- title: "networking"
-  url: /hakiki/networking
-
-- title: "resources"
-  url: /hakiki/resources
+    - title: resources
+      url: /hakiki/reference/resources
+    - title: networking
+      url: /hakiki/reference/networking

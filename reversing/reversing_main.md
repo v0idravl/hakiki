@@ -5,8 +5,8 @@
 Related pages:
 
 - [RE Assembly Workflow](assembly_workflow.md) — assembly-to-pseudocode workflow and argument recovery.
-- [x86-64 / AMD64](../x86_64/amd64_main.md) — syscall prototypes, register mapping, `execve` and ORW pseudocode.
-- [pwntools Boilerplate](../python_tools/pwntools.md) — automation and exploit scripting templates.
+- [x86-64 / AMD64](../exploit_dev/amd64_main.md) — syscall prototypes, register mapping, `execve` and ORW pseudocode.
+- [pwntools Boilerplate](../exploit_dev/pwntools.md) — automation and exploit scripting templates.
 
 ---
 
@@ -341,7 +341,7 @@ print(base64.b64decode(encoded.translate(table) + "=="))
 
 | Resource | Notes |
 |---|---|
-| [hakiki x86-64 / AMD64](../x86_64/amd64_main.md) | Local reference with Linux syscall prototypes, register mapping, `execve` argv/envp layouts, ORW and socket pseudocode |
+| [hakiki x86-64 / AMD64](../exploit_dev/amd64_main.md) | Local reference with Linux syscall prototypes, register mapping, `execve` argv/envp layouts, ORW and socket pseudocode |
 | [hakiki RE Assembly Workflow](assembly_workflow.md) | Local workflow for translating assembly patterns into pseudocode |
 | [Felix Cloutier x86 Reference](https://www.felixcloutier.com/x86/) | Unofficial but detailed — instruction encoding, flags, operand behaviour |
 | [x86 Prefix & Escape Opcode Flowchart](https://soc.me/interfaces/x86-prefixes-and-escape-opcodes-flowchart) | Visual map of x86 prefix bytes and opcode escape sequences |

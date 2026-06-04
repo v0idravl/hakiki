@@ -1,4 +1,4 @@
-# Networking — [Back to Main](README.md)
+# Networking — [Back to Main](../README.md)
 
 ## Interface / Routing
 
@@ -67,7 +67,7 @@ tcpdump -i tun0 host $IP -w capture.pcap
 
 ## Port Forwarding / Tunneling
 
-See [Pivoting](pivoting/pivoting_main.md) for full tunneling workflow.
+See [Pivoting](../post_exploitation/pivoting_main.md) for full tunneling workflow.
 
 ```bash
 # Quick SSH local forward

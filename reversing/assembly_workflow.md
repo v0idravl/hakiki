@@ -61,7 +61,7 @@ Pseudocode:
 execve("/bin/sh", NULL, NULL);
 ```
 
-For complete syscall prototypes and pointer layouts, use [x86-64 / AMD64](../x86_64/amd64_main.md).
+For complete syscall prototypes and pointer layouts, use [x86-64 / AMD64](../exploit_dev/amd64_main.md).
 
 ---
 
@@ -206,6 +206,6 @@ set {short}0x401286 = 0x9090
 
 ## References
 
-- [x86-64 / AMD64](../x86_64/amd64_main.md) — syscall prototypes, register mapping, `execve`/ORW/socket pseudocode.
+- [x86-64 / AMD64](../exploit_dev/amd64_main.md) — syscall prototypes, register mapping, `execve`/ORW/socket pseudocode.
 - [Felix Cloutier x86 Reference](https://www.felixcloutier.com/x86/) — instruction-level reference.
 - `man 2 <syscall>` — exact syscall prototypes and semantics.

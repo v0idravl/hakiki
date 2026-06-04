@@ -1,4 +1,4 @@
-# Resources — [Back to Main](README.md)
+# Resources — [Back to Main](../README.md)
 
 ## Essential References (keep these open during work)
 
@@ -15,7 +15,7 @@
 | [dorksearch.com](https://dorksearch.com/) | Pre-built Google dork templates |
 | [PortSwigger Web Security Academy](https://portswigger.net/web-security) | Web attack labs with explanations — best free web security training |
 | [CryptoHack Courses](https://cryptohack.org/courses/) | Cryptography fundamentals and applied crypto practice — useful for CTF crypto, reversing context, and understanding real protocol mistakes |
-| [hakiki x86-64 / AMD64](x86_64/amd64_main.md) | Local syscall reference with prototypes, register mapping, and pseudocode for argv/envp, ORW, sockets |
+| [hakiki x86-64 / AMD64](../exploit_dev/amd64_main.md) | Local syscall reference with prototypes, register mapping, and pseudocode for argv/envp, ORW, sockets |
 | [Shell-Storm x86-64 Syscall Table](https://shell-storm.org/shellcode/files/linux-4.7-syscalls-x64.html) | Fast Linux syscall-number lookup; pair with `man 2` or the local AMD64 page for argument meaning |
 | [WADComs](https://wadcoms.github.io/) | AD commands filtered by what you have |
 
