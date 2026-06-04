@@ -17,6 +17,11 @@
 
 - title: "exploit"
   url: /hakiki/exploit/exploit_main
+  children:
+    - title: binary exploitation
+      url: /hakiki/binary_exploitation/binexp_main
+    - title: pwntools
+      url: /hakiki/python_tools/pwntools
 
 - title: "buffer overflow"
   url: /hakiki/bufferoverflow/bof_main
@@ -45,6 +50,19 @@
 
 - title: "reversing"
   url: /hakiki/reversing/reversing_main
+  children:
+    - title: assembly workflow
+      url: /hakiki/reversing/assembly_workflow
+    - title: x86-64 / amd64
+      url: /hakiki/x86_64/amd64_main
+
+- title: "python tools"
+  url: /hakiki/python_tools/python_tools_main
+  children:
+    - title: pwntools
+      url: /hakiki/python_tools/pwntools
+    - title: scapy
+      url: /hakiki/python_tools/scapy
 
 - title: "evasion"
   url: /hakiki/evasion
