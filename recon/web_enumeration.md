@@ -107,6 +107,30 @@ gospider -s http://$IP -o output/ -c 10 -d 3
 - API endpoints: fuzz with `/api/FUZZ`, `/v1/FUZZ`, `/api/v2/FUZZ`
 - S3 bucket references in HTML/JS → check if public
 - WebDAV enabled? `davtest -url http://$IP/webdav/`
+- Root 301/302 to a hostname? (`Location: http://name.htb/`) → add the vhost, then re-run dir
+  busting with `--resolve name.htb:80:$IP` (or the `Host:` header). Busting the bare IP just
+  returns a wall of redirects and false-positive CMS fingerprints; the real surface is the vhost.
+
+## Spring Boot Actuator
+
+A Spring Boot "Whitelabel Error Page" or a Spring Security `/login` means: walk the Actuator
+management endpoints. A permissive `management.endpoints.web.exposure.include` publishes them
+unauthenticated, and several leak directly into a foothold.
+
+```bash
+for p in actuator actuator/health actuator/env actuator/mappings actuator/sessions \
+         actuator/beans actuator/heapdump actuator/httptrace; do
+  printf "%s\t" "$p"; curl -s -o /dev/null -w "%{http_code}\n" http://name.htb/$p
+done
+```
+
+- `/actuator/sessions` → maps live `JSESSIONID` → username. Steal an authenticated user's id and
+  replay it as a `JSESSIONID` cookie to hijack their session (e.g. straight into a `/admin` area).
+- `/actuator/env` → config + secrets (DB passwords, keys); `/actuator/mappings` → full route list,
+  including hidden/privileged endpoints to attack next.
+- `/actuator/heapdump` → downloads a heap dump; `strings`/grep it for in-memory credentials/tokens.
+- The deployed `.jar` is a zip: `unzip -o app.jar BOOT-INF/classes/application.properties` for
+  plaintext datasource creds once you have read access on the host.
 
 ## Wordlists
 
